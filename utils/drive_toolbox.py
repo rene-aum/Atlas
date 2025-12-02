@@ -71,3 +71,10 @@ def read_from_google_sheets(gc,spreadsheet_id,sheetname=None):
 
     return df
 
+def list_file_ids_for_drive_folder(drive, folder_id:str):
+    file_list = drive.ListFile({'q': f"'{folder_id}' in parents and trashed=false"}).GetList()
+    file_id_dict = {}
+    for file in file_list:
+        file_id_dict[file['title']] = file['id']
+    return file_id_dict
+

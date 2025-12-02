@@ -11,6 +11,12 @@ id_business_case_processed = '1i9_XJG_dqedRYXMkbdTIiF2SNYwUzHT5IUTz4QFJ0sY'
 id_medios_total_sheets = '1UaQclGSS0RXlZKqgeHi3DxikLCYNfy8o0BvffyLAvGE'
 id_medios_propios_consolidado_sheets = '1pLyT-mEvjQTv7VbdnNWyrQQzHWS9nSMzEJjGIeuiJzo'
 
+# data source folder id
+data_source_folder_id = "1hl7hITBmAXZKkb_qAHZ-045yJnSwfU2Q"
+
+# output folder id raw 
+atlas_raw_output_folder_id = "1GIjtJ52Epb_aYXGoCE-QFXTnEreptQiE"
+
 # otros
 mexico_tz = 'America/Mexico_City'
 
