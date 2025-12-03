@@ -193,11 +193,28 @@ class RawAtlas:
             self.cta_adobe_df = res
         return self.cta_adobe_df
     
-    def t9_raw_consolidado_bauto(self, drive, drive_folder_id):
+    def t9_raw_consolidado_bauto(self, drive, gc, drive_folder_id):
         """actualmente esta info se lee directo de drive.
         """
-        pass
-    
+        file_list = drive.ListFile(
+            {'q': f"'{drive_folder_id}' in parents and trashed=false"}).GetList()
+        file_id_dict = {}
+        for file in file_list:
+            file_id_dict[file['title']] = file['id']
+        bases_ids = {k: file_id_dict[k]
+                     for k in file_id_dict.keys() if k.startswith('base')}
+
+        number_to_month = {'ene': 1, 'feb': 2, 'mar': 3, 'abr': 4,
+                           'may': 5, 'jun': 6, 'jul': 7, 'ago': 8,
+                           'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12}
+        consolidado_raw = (pd.concat(
+            [read_from_google_sheets(gc, bases_ids[k])
+             .assign(month_base=number_to_month.get(k[-5:-2].lower()),
+                     year_base=int(k[-2:]))
+             for k in bases_ids.keys()]
+                            )
+                            )
+        return consolidado_raw
 
 
 
