@@ -17,6 +17,17 @@ data_source_folder_id = "1hl7hITBmAXZKkb_qAHZ-045yJnSwfU2Q"
 # output folder id raw 
 atlas_raw_output_folder_id = "1GIjtJ52Epb_aYXGoCE-QFXTnEreptQiE"
 
+#raw output path ids drive
+raw_output_ids={"t1_RawVehicleStatus":"1LnxD5KjR3iEbN2nmomUZwMp3kLYzES06",
+                "t2_RawPedidos":"1dFW_iV7wZm5Ig209-IL-kN5Wu6WCoFuR",
+                "t3_RawClientes":"1gIcvU7DqRSFjKnPlnQB8Qg_I6i--bQkn",
+                "t4_RawAppstep":"1JlTSIDUCiwaonDOLasxAzFpsoDvuSZ72",
+                "t5_RawUniqueVisitors":"1mdRALfwiC3ku86S2TDwryr-PmSOpKpVk",
+                "t6_RawProductViews":"13OF3Z8UcI4cANFzUYY2XlJWsiZHn03dG",
+                "t7_RawCancelaciones":"10S_yxb84JeQ5CiOdVsO3ARB1Eg2h2TMI",
+                "t8_RawCtaAdobe":"1s9W1EqiF0jcetbtneXEpLU-5Hk5n1bmz"
+                }
+
 # otros
 mexico_tz = 'America/Mexico_City'
 
