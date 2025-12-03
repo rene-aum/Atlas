@@ -8,6 +8,7 @@ from src.constants import mexico_tz
 from utils.utils import (add_year_week,
                    process_columns,
                    custom_read)
+from utils.drive_toolbox import read_from_google_sheets
 import pytz
 
 app_step_rename_dict = {}
@@ -37,7 +38,7 @@ class RawAtlas:
     def __init__(self):
         self.today = datetime.now(tz=pytz.timezone(mexico_tz)).strftime("%Y-%m-%d")
 
-    def vehicle_status_raw_t1(self, **custom_read_args):
+    def t1_raw_vehicle_status(self, **custom_read_args):
         """ 
         """
         if self.vehicle_status_tab is None:
@@ -58,7 +59,7 @@ class RawAtlas:
             self.vehicle_status_tab = res
         return self.vehicle_status_tab
     
-    def pedidos_raw_t2(self,date_col="fecha_de_creacion", **custom_read_args):
+    def t2_raw_pedidos(self,date_col="fecha_de_creacion", **custom_read_args):
         """ """
         if self.pedidos_tab is None:
             rename_dict = {
@@ -79,7 +80,7 @@ class RawAtlas:
             self.pedidos_tab = res
         return self.pedidos_tab
     
-    def clientes_raw_t3(self, **custom_read_args):
+    def t3_raw_clientes(self, **custom_read_args):
         """ """
         if self.clientes_tab is None:
             df = custom_read(**custom_read_args)
@@ -96,7 +97,7 @@ class RawAtlas:
         return self.clientes_tab
 
 
-    def appstep_raw_t4(self, **custom_read_args):
+    def t4_raw_appstep(self, **custom_read_args):
         """ """
         if self.appstep_tab is None:
             df = custom_read(**custom_read_args)
@@ -128,7 +129,7 @@ class RawAtlas:
             self.appstep_tab = res
         return self.appstep_tab
     
-    def unique_visitors_raw_t5(self,**custom_read_args):
+    def t5_raw_unique_visitors(self,**custom_read_args):
         """
         """
         if self.unique_visitors_adobe_df is None:
@@ -140,7 +141,7 @@ class RawAtlas:
         return self.unique_visitors_adobe_df
 
 
-    def product_views_raw_t6(self, **custom_read_args):
+    def t6_raw_product_views(self, **custom_read_args):
         """ 
         """
         if self.product_views_tab is None:
@@ -158,7 +159,7 @@ class RawAtlas:
             self.product_views_tab = res
         return self.product_views_tab
     
-    def cancelaciones_raw_t7(self, **custom_read_args):
+    def t7_raw_cancelaciones(self, **custom_read_args):
         """
         """
         if self.cancelaciones_df is None:
@@ -171,7 +172,7 @@ class RawAtlas:
         return self.cancelaciones_df
 
 
-    def load_cta_adobe(self,**custom_read_args):
+    def t8_raw_cta_adobe(self,**custom_read_args):
         """
         """
         if self.cta_adobe_df is None:
@@ -192,6 +193,10 @@ class RawAtlas:
             self.cta_adobe_df = res
         return self.cta_adobe_df
     
+    def t9_raw_consolidado_bauto(self, drive, drive_folder_id):
+        """actualmente esta info se lee directo de drive.
+        """
+        pass
     
 
 
