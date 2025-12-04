@@ -33,6 +33,7 @@ class RawAtlas:
     salud_inventario_df = None
     t8 = None
     t7 = None
+    t9 = None
 
 
     def __init__(self):
