@@ -15,24 +15,24 @@ app_step_rename_dict = {}
 
 
 class RawAtlas:
-    appstep_tab = None
+    t4 = None
     salesforce_tab = None
-    clientes_tab = None
-    vehicle_status_tab = None
+    t3 = None
+    t1 = None
     visitantes_diarios_tab = None
     funnel_comprador_tab = None
-    pedidos_tab = None
+    t2 = None
     pedidos_logs_tab = None
     terminos_de_busqueda_tab = None
     canales_adobe_tab = None
-    product_views_tab = None
+    t6 = None
     retroalimentacion_tab =  None
     envios_medios_propios_df = None
     citas_tab = None
-    unique_visitors_adobe_df = None
+    t5 = None
     salud_inventario_df = None
-    cta_adobe_df = None
-    cancelaciones_df = None
+    t8 = None
+    t7 = None
 
 
     def __init__(self):
@@ -41,7 +41,7 @@ class RawAtlas:
     def t1_raw_vehicle_status(self, **custom_read_args):
         """ 
         """
-        if self.vehicle_status_tab is None:
+        if self.t1 is None:
             vs_raw = (custom_read(**custom_read_args)
                   .pipe(process_columns)
                   )
@@ -56,12 +56,12 @@ class RawAtlas:
                 .rename(columns=rename_dict)
                 
             )
-            self.vehicle_status_tab = res
-        return self.vehicle_status_tab
+            self.t1 = res
+        return self.t1
     
     def t2_raw_pedidos(self,date_col="fecha_de_creacion", **custom_read_args):
         """ """
-        if self.pedidos_tab is None:
+        if self.t2 is None:
             rename_dict = {
                 "vendedor_id_comercio_externo": "id_am_vendedor",
                 "comprador_id_comercio_externo": "id_am_comprador",
@@ -77,12 +77,12 @@ class RawAtlas:
                 .pipe(process_columns)
                 .rename(columns=rename_dict)        
             )
-            self.pedidos_tab = res
-        return self.pedidos_tab
+            self.t2 = res
+        return self.t2
     
     def t3_raw_clientes(self, **custom_read_args):
         """ """
-        if self.clientes_tab is None:
+        if self.t3 is None:
             df = custom_read(**custom_read_args)
             rename_dict = {
                 "id": "id_am",
@@ -93,13 +93,13 @@ class RawAtlas:
                 process_columns(df)
                 .rename(columns=rename_dict)
             )
-            self.clientes_tab = res
-        return self.clientes_tab
+            self.t3 = res
+        return self.t3
 
 
     def t4_raw_appstep(self, **custom_read_args):
         """ """
-        if self.appstep_tab is None:
+        if self.t4 is None:
             df = custom_read(**custom_read_args)
             columnas_eliminar = df.filter(like='Column').columns
             rename_dict = {
@@ -126,25 +126,25 @@ class RawAtlas:
                 process_columns(df.drop(columns=columnas_eliminar))
                 .rename(columns=rename_dict)
             )
-            self.appstep_tab = res
-        return self.appstep_tab
+            self.t4 = res
+        return self.t4
     
     def t5_raw_unique_visitors(self,**custom_read_args):
         """
         """
-        if self.unique_visitors_adobe_df is None:
+        if self.t5 is None:
             df = (custom_read(**custom_read_args)
                   .rename(columns={'Page name <v1> (evar1)':'pages'})
                 .pipe(process_columns)
                 )
-            self.unique_visitors_adobe_df = df
-        return self.unique_visitors_adobe_df
+            self.t5 = df
+        return self.t5
 
 
     def t6_raw_product_views(self, **custom_read_args):
         """ 
         """
-        if self.product_views_tab is None:
+        if self.t6 is None:
             rename_dict = {
                 "Customer ID <v37> (evar37)": "id_am",
                 "Page url <c13> (prop13)": "url",
@@ -156,26 +156,26 @@ class RawAtlas:
                 .rename(columns=rename_dict)
                 .pipe(process_columns)
                   )
-            self.product_views_tab = res
-        return self.product_views_tab
+            self.t6 = res
+        return self.t6
     
     def t7_raw_cancelaciones(self, **custom_read_args):
         """
         """
-        if self.cancelaciones_df is None:
+        if self.t7 is None:
             df = custom_read(**custom_read_args)
             df_mod = (df
                     .pipe(process_columns)
                     .assign(cancelled_at = lambda x: pd.to_datetime(x.cancelled_at).dt.date)
                     )
-            self.cancelaciones_df=df_mod
-        return self.cancelaciones_df
+            self.t7=df_mod
+        return self.t7
 
 
     def t8_raw_cta_adobe(self,**custom_read_args):
         """
         """
-        if self.cta_adobe_df is None:
+        if self.t8 is None:
             df = custom_read(**custom_read_args)
             rename_dict = {
                 "application_step_<v45>_(evar45)": "application_step",
@@ -190,31 +190,37 @@ class RawAtlas:
                 .rename(columns=rename_dict)
                 .pipe(process_columns)
                 )
-            self.cta_adobe_df = res
-        return self.cta_adobe_df
+            self.t8 = res
+        return self.t8
     
     def t9_raw_consolidado_bauto(self, drive, gc, drive_folder_id):
         """actualmente esta info se lee directo de drive.
         """
-        file_list = drive.ListFile(
-            {'q': f"'{drive_folder_id}' in parents and trashed=false"}).GetList()
-        file_id_dict = {}
-        for file in file_list:
-            file_id_dict[file['title']] = file['id']
-        bases_ids = {k: file_id_dict[k]
-                     for k in file_id_dict.keys() if k.startswith('base')}
+        if self.t9 is None:
+            file_list = drive.ListFile(
+                {'q': f"'{drive_folder_id}' in parents and trashed=false"}).GetList()
+            file_id_dict = {}
+            for file in file_list:
+                file_id_dict[file['title']] = file['id']
+            bases_ids = {k: file_id_dict[k]
+                        for k in file_id_dict.keys() if k.startswith('base')}
 
-        number_to_month = {'ene': 1, 'feb': 2, 'mar': 3, 'abr': 4,
-                           'may': 5, 'jun': 6, 'jul': 7, 'ago': 8,
-                           'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12}
-        consolidado_raw = (pd.concat(
-            [read_from_google_sheets(gc, bases_ids[k])
-             .assign(month_base=number_to_month.get(k[-5:-2].lower()),
-                     year_base=int(k[-2:]))
-             for k in bases_ids.keys()]
-                            )
-                            )
-        return consolidado_raw
+            number_to_month = {'ene': 1, 'feb': 2, 'mar': 3, 'abr': 4,
+                            'may': 5, 'jun': 6, 'jul': 7, 'ago': 8,
+                            'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12}
+            consolidado_raw = (pd.concat(
+                [read_from_google_sheets(gc, bases_ids[k])
+                .assign(month_base=number_to_month.get(k[-5:-2].lower()),
+                        year_base=int(k[-2:]))
+                for k in bases_ids.keys()]
+                                )
+                                )
+            consolidado_raw = (consolidado_raw
+                  .sort_values(by=['Folio','Fecha Creacion'],ascending=[False,False])
+                  .pipe(process_columns)
+                  )
+            self.t9 = consolidado_raw
+        return self.t9
 
 
 
