@@ -1,7 +1,7 @@
 # paths para lectura
 id_tracking_envios = "1lifjZ5PALlBAjGi5-jl23ckXPVGQ9sWx"
 id_reporte_ventas = "1W79C_bkTLmXUqQC7M6Z2B3-v7L9khJX1EoqDFawsLfg"
-id_business_case = '1kj8pjfiulMoKzblNGKm0--cCv5T2JooHeFhrARktT9w'
+folder_id_bauto_gabo = '1RD9te3zDsGpZZdqwqfxaTgr1hvKMK2vj'
 
 # ids para escritura
 id_master_table_sheets = "1VOMrw6vBHXAVZPxA_IcfoGfnOY1u5SQx8bV5UmV9eLc"
@@ -25,8 +25,8 @@ raw_output_ids={"t1_RawVehicleStatus":"1LnxD5KjR3iEbN2nmomUZwMp3kLYzES06",
                 "t5_RawUniqueVisitors":"1mdRALfwiC3ku86S2TDwryr-PmSOpKpVk",
                 "t6_RawProductViews":"13OF3Z8UcI4cANFzUYY2XlJWsiZHn03dG",
                 "t7_RawCancelaciones":"10S_yxb84JeQ5CiOdVsO3ARB1Eg2h2TMI",
-                "t8_RawCtaAdobe":"1s9W1EqiF0jcetbtneXEpLU-5Hk5n1bmz"
-                }
+                "t8_RawCtaAdobe":"1s9W1EqiF0jcetbtneXEpLU-5Hk5n1bmz",
+                "t9_RawConsolidadBaseTotalAutomarket":"1VJIdSi-hx8Z2wBLBNtRdr4NEGNpBDhn0"}
 
 # otros
 mexico_tz = 'America/Mexico_City'
