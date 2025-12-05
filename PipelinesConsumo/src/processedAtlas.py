@@ -112,8 +112,83 @@ class ProcessedAtlas:
                     [lambda x: x.email_otp_validated.eq(1)| x.phone_number_otp_validated.eq(1)]
                     )
         return clientes
+    
+    def proc_adobe_funnel_comprador(self, tipo='total'):
+        """tipo = 'total' o 'usuario'. 'total' devuelve appstep sin filtros, 'usuario' deduplica por usuario unico fech
+                y quita entradas sin usuario automarket.
+        """
+        subset_columnas = ['date', 'id_am', 'application_name',
+                           'app_click_start', 'app_page_visit',
+                           'app_completed']
+        rename_dict = {'app_click_start': 'fc_app_click_start',
+                       'app_page_visit': 'fc_app_page_visit',
+                       'app_completed': 'fc_app_completed'
+                       }
+        funnel_comprador_digital = (self.ra.t4.copy()
+                                    [subset_columnas]
+                                    [lambda x: x.application_name ==
+                                        'pago de apartado']
+                                    .rename(columns=rename_dict)
+                                    .assign(id_am=lambda x: pd.to_numeric(x.id_am, errors='coerce').astype('Int64'),
+                                            date=lambda x: pd.to_datetime(
+                                                x.date, errors='coerce').dt.strftime('%Y-%m-%d')
+                                            )
+                                    .reset_index(drop=True)
+                                        )
+        if tipo=='usuario':
+            funnel_comprador_digital =(funnel_comprador_digital
+                                       [lambda x: x.id_am.notna()]
+                                    .groupby(['id_am', 'date', 'application_name'], as_index=False).sum()
+                                    .assign(fc_app_click_start=lambda x: x.fc_app_click_start.gt(0)*1,
+                                            fc_app_page_visit=lambda x: x.fc_app_page_visit.gt(
+                                        0)*1,
+                                            fc_app_completed=lambda x: x.fc_app_completed.gt(0)*1
+                                        )
+                                        )
+            assert funnel_comprador_digital.groupby(["id_am","date"]).size().max()==1, "Dataframe con usuario-fecha duplicado!"
+        return funnel_comprador_digital
+    
+    def proc_adobe_funnel_vendedor(self, tipo='total'):
+        """
+        """
+        subset_columnas = ['date','id_am','application_name',
+                   'app_click_start','app_page_visit',
+                   'app_step_2','app_step_3', 'app_step_4',
+                   'app_step_6', 'app_step_8','app_step_9',
+                   'app_completed']
+        rename_dict = {'app_click_start':'fv_app_click_start',
+                        'app_page_visit':'fv_app_page_visit',
+                        'app_step_2':'fv_app_step_2',
+                        'app_step_3':'fv_app_step_3',
+                        'app_step_4':'fv_app_step_4',
+                        'app_step_6':'fv_app_step_6',
+                        'app_step_8':'fv_app_step_8',
+                        'app_step_9':'fv_app_step_9',
+                        'app_completed':'fv_app_completed'
+                    }
+        funnel_digital_vendedor = (self.ra.t4.copy()
+                                [subset_columnas]
+                                [lambda x:x.application_name=='vender mi auto']
+                                .rename(columns=rename_dict)
+                                .assign(id_am = lambda x: pd.to_numeric(x.id_am,errors='coerce').astype('Int64'),
+                                        date = lambda x: pd.to_datetime(x.date,errors='coerce').dt.strftime('%Y-%m-%d')
+                                        )
+                                .reset_index(drop=True)
+                                
+                                )
+        
+        if tipo=='usuario':
+            funnel_digital_vendedor = (funnel_digital_vendedor
+                                       [lambda x: x.id_am.notna()]
+                                       .groupby(['id_am', 'date', 'application_name'], as_index=False)
+                                       .sum()
+                                       .assign(**{y: lambda x, col=y: x[col].gt(0)*1 
+                                                  for y in rename_dict.values()}
+                                               )
+                                               )
+        return funnel_digital_vendedor
 
 
-
+    
 
 
