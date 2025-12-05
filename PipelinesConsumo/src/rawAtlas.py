@@ -15,24 +15,15 @@ app_step_rename_dict = {}
 
 
 class RawAtlas:
-    t4 = None
-    salesforce_tab = None
-    t3 = None
     t1 = None
-    visitantes_diarios_tab = None
-    funnel_comprador_tab = None
     t2 = None
-    pedidos_logs_tab = None
-    terminos_de_busqueda_tab = None
-    canales_adobe_tab = None
-    t6 = None
-    retroalimentacion_tab =  None
-    envios_medios_propios_df = None
-    citas_tab = None
+    t3 = None
+    t4 = None
     t5 = None
-    salud_inventario_df = None
-    t8 = None
+    t6 = None
     t7 = None
+    t8 = None
+    t9 = None
 
 
     def __init__(self):

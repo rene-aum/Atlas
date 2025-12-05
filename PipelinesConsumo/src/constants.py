@@ -17,6 +17,7 @@ data_source_folder_id = "1hl7hITBmAXZKkb_qAHZ-045yJnSwfU2Q"
 # output folder id raw 
 atlas_raw_output_folder_id = "1GIjtJ52Epb_aYXGoCE-QFXTnEreptQiE"
 
+atlas_consumo_output_folder_id = "1PKqz6QeHCc9ythcU7LsSnu-6l_5rdGtV"
 #raw output path ids drive
 raw_output_ids={"t1_RawVehicleStatus":"1LnxD5KjR3iEbN2nmomUZwMp3kLYzES06",
                 "t2_RawPedidos":"1dFW_iV7wZm5Ig209-IL-kN5Wu6WCoFuR",
