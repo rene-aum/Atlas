@@ -18,20 +18,19 @@ app_step_rename_dict = {}
 class ProcessedAtlas:
 
 
-    def __init__(self,ra):
+    def __init__(self):
         self.today = datetime.now(tz=pytz.timezone(mexico_tz)).strftime("%Y-%m-%d")
-        self.ra = ra
     
-    def proc_publicaciones(self):
+    def proc_publicaciones(self, rawdf):
         """
         """
         subset_columnas = ['id_am','sku','product_name','status','status_product','plate',
                    'order_id','order_created_at',
-                   'vin','engine_type','published_at','km','showroom','vs_extra_url_key']
+                   'vin','engine_type','published_at','km','showroom']
         rename_dict = {'vs_extra_url_key':'url',
                     'order_id':'last_commerce_order_id'}
 
-        publicacion_df = (self.ra.t1.copy()
+        publicacion_df = (rawdf
         .sort_values(by=['sku','order_created_at'], ascending=[True,False])
         [subset_columnas]
         .groupby('sku').head(1)
@@ -49,7 +48,7 @@ class ProcessedAtlas:
         )
         return publicacion_df
     
-    def proc_pedidos(self):
+    def proc_pedidos(self,rawdf):
         """
         """
         subset_columnas = ['numero_de_pedido', 'pedido_id_comercio_externo',
@@ -62,7 +61,7 @@ class ProcessedAtlas:
                     "comprador_nombre_de_la_cuenta":"nombre_comprador",
                     "estado":"sf_order_status",
                     }
-        pedidos = (self.ra.t2.copy()
+        pedidos = (rawdf
                 [subset_columnas]
                 .rename(columns=rename_dict)
                 .assign(sf_order_id = lambda x: pd.to_numeric(x['sf_order_id'], errors='coerce').astype('Int64'),
@@ -74,7 +73,7 @@ class ProcessedAtlas:
                 )
         return pedidos
     
-    def proc_clientes(self):
+    def proc_clientes(self,rawdf):
         """
         """
         subset_columnas = [
@@ -92,7 +91,7 @@ class ProcessedAtlas:
                 "phone_number_otp_validated",
                 "email_otp_validated",
             ]
-        clientes = (self.ra.t3.copy()
+        clientes = (rawdf
                     [subset_columnas]
                     .assign(id_am = lambda x: pd.to_numeric(x['id_am'], errors='coerce').astype('Int64'),
                             phone = lambda x: np.where(x.phone.notna(),
@@ -113,7 +112,7 @@ class ProcessedAtlas:
                     )
         return clientes
     
-    def proc_adobe_funnel_comprador(self, tipo='total'):
+    def proc_adobe_funnel_comprador(self,rawdf, tipo='total'):
         """tipo = 'total' o 'usuario'. 'total' devuelve appstep sin filtros, 'usuario' deduplica por usuario unico fech
                 y quita entradas sin usuario automarket.
         """
@@ -124,7 +123,7 @@ class ProcessedAtlas:
                        'app_page_visit': 'fc_app_page_visit',
                        'app_completed': 'fc_app_completed'
                        }
-        funnel_comprador_digital = (self.ra.t4.copy()
+        funnel_comprador_digital = (rawdf
                                     [subset_columnas]
                                     [lambda x: x.application_name ==
                                         'pago de apartado']
@@ -148,7 +147,7 @@ class ProcessedAtlas:
             assert funnel_comprador_digital.groupby(["id_am","date"]).size().max()==1, "Dataframe con usuario-fecha duplicado!"
         return funnel_comprador_digital
     
-    def proc_adobe_funnel_vendedor(self, tipo='total'):
+    def proc_adobe_funnel_vendedor(self,rawdf, tipo='total'):
         """
         """
         subset_columnas = ['date','id_am','application_name',
@@ -166,7 +165,7 @@ class ProcessedAtlas:
                         'app_step_9':'fv_app_step_9',
                         'app_completed':'fv_app_completed'
                     }
-        funnel_digital_vendedor = (self.ra.t4.copy()
+        funnel_digital_vendedor = (rawdf
                                 [subset_columnas]
                                 [lambda x:x.application_name=='vender mi auto']
                                 .rename(columns=rename_dict)
