@@ -28,6 +28,18 @@ raw_output_ids={"t1_RawVehicleStatus":"1LnxD5KjR3iEbN2nmomUZwMp3kLYzES06",
                 "t7_RawCancelaciones":"10S_yxb84JeQ5CiOdVsO3ARB1Eg2h2TMI",
                 "t8_RawCtaAdobe":"1s9W1EqiF0jcetbtneXEpLU-5Hk5n1bmz",
                 "t9_RawConsolidadBaseTotalAutomarket":"1VJIdSi-hx8Z2wBLBNtRdr4NEGNpBDhn0"}
+# consumo outputs ids sheets
+
+consumo_sheets_ids_dict = {'AcAdobeFunnelVendedorUsuario': '18NezvGLza7Xs1x0mLTzDf__qW3w0BS3u_IrFqtDeu0Q',
+                           'AcAdobeFunnelVendedorTotal': '1lfQdlkl_pYLrD6GFJrOWFJaFaLEZvQygAhAnkljxspg',
+                           'AcAdobeFunnelCompradorUsuario': '1kwtOw5EhTnsjODtS7xnVqmp5R7O2VHYzV6dJu8hv59M',
+                           'AcAdobeFunnelCompradorTotal': '1pLJVFQoHO5uUVXlPwkPiIKP1ugJjva-kvypMV_U4HBI',
+                           'AcClientes': '1Re7omesAjvf8hoQ9n_BTCMBUnM37YOj6VOJTZHs3I6I',
+                           'AcPedidos': '1aBfKoX6d9BEPhhYg-DDuvC5QFcd3EQtXb0YrU7n4nYM',
+                           'AcPublicaciones': '1NIvj4zjUO9N4fsiW1I85VI2RfTCT54nvbBON_l0xeYI',
+                           'AcVisitasUnicas':'1jmbOj9a7-dnXUgH276lJ-blP-auDdWGemzia1RTsNEo',
+                           'AcProductViews':'1nparJO5qpIRXa0KsXD7mn4HKwuJi422Wy4o7bqLDSfs'
+                           }
 
 # otros
 mexico_tz = 'America/Mexico_City'

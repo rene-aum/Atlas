@@ -186,6 +186,51 @@ class ProcessedAtlas:
                                                )
                                                )
         return funnel_digital_vendedor
+    
+    def proc_visitas_unicas(self,rawdf):
+        """
+        """
+        subset_columns = ['date','pages',
+                  'unique_visitors','visits']
+        rename_dict={'pages':'page_name'}
+        mapping_page_names = {'escritorio:publica:comprador:landing':'fc_visitas_unicas_landing_comprador',
+            'escritorio:publica:comprador:pdp':'fc_visitas_unicas_pdp',
+            'escritorio:publica:comprador:plp':'fc_visitas_unicas_plp',
+            'escritorio:publica:vendedor:landing':'fv_visitas_unicas_landing_vendedor',
+            'escritorio:privada:vendedor:landing':'fv_visitas_unicas_landing_vendedor',
+            'escritorio:publica:comprador:plp:todos los vehículos':None,
+            'escritorio:privada:comprador:pdp':None,
+            'escritorio:publica:personas:landing':None}
+
+        unique_visits = (rawdf
+                        [subset_columns]
+                        .rename(columns=rename_dict)
+                        .assign(date = lambda x: pd.to_datetime(x.date),
+                                visit_type = lambda x: x.page_name.map(mapping_page_names))
+                        [lambda x: x.visit_type.notna()]
+                        .groupby(['date','visit_type'])
+                        ['unique_visitors'].sum()
+                        .unstack('visit_type')
+                        .fillna(0)
+                        .reset_index()
+        )
+        return unique_visits
+    
+    def proc_pdp_views(self,rawdf):
+        """
+        """
+        pdp = (rawdf
+                .assign(id_am = lambda x:pd.to_numeric(x.id_am,errors='coerce').astype('Int64'),
+                        date = lambda x: pd.to_datetime(x.date),
+                        view_type = lambda x: np.where(x.id_am.isna(),'unidentified_user_views','identified_user_views'))
+                .groupby(['date','sku','view_type'])
+                ['page_views'].sum()
+                .unstack('view_type').fillna(0)
+                .reset_index()
+                [lambda x: pd.to_datetime(x.date)>=pd.to_datetime(self.today)-timedelta(days=90)]
+                )
+        return pdp
+
 
 
     
