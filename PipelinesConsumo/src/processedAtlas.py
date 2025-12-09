@@ -205,7 +205,7 @@ class ProcessedAtlas:
         unique_visits = (rawdf
                         [subset_columns]
                         .rename(columns=rename_dict)
-                        .assign(date = lambda x: pd.to_datetime(x.date),
+                        .assign(date = lambda x: pd.to_datetime(x.date).dt.strftime(''),
                                 visit_type = lambda x: x.page_name.map(mapping_page_names))
                         [lambda x: x.visit_type.notna()]
                         .groupby(['date','visit_type'])
@@ -230,6 +230,25 @@ class ProcessedAtlas:
                 [lambda x: pd.to_datetime(x.date)>=pd.to_datetime(self.today)-timedelta(days=90)]
                 )
         return pdp
+
+    def proc_consolidado_bauto(self,rawdf):
+        """
+        """
+        res = (rawdf
+                .sort_values(by=['folio','year_base','month_base'],ascending=[False,False,False])
+                .assign(folio = lambda x: x.folio.astype('Int64'),
+                        fecha_creacion = lambda x: pd.to_datetime(x.fecha_creacion).dt.strftime('%Y-%m-%d'),
+                        telefono = lambda x: np.where(x.telefono.notna(),x.telefono.astype('Int64').astype(str),x.telefono),
+                        month_fecha_creacion = lambda x: pd.to_datetime(x.fecha_creacion).dt.month.astype('Int64'),
+                        year_fecha_creacion = lambda x: pd.to_datetime(x.fecha_creacion).dt.year.astype('Int64'),
+                        )
+                .groupby('folio').head(1)
+                )
+        
+        return res
+    
+    
+
 
 
 

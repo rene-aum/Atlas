@@ -52,7 +52,7 @@ def update_sheets_in_drive_folder(gc,spreadsheet_id,worksheet_name,df_to_update)
         # 4. Update the worksheet with the master_table data
         set_with_dataframe(worksheet, df_to_update)
 
-        print(f"Google Sheet '{worksheet_name}'  updated with new data.")
+        print(f"Google Sheet with ID:{spreadsheet_id} - '{worksheet_name}'  updated with new data.")
 
     except Exception as e:
         print(f"Spreadsheet with ID '{spreadsheet_id}' not found. Exception: {e}") 
