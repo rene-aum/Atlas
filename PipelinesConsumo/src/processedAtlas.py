@@ -51,6 +51,7 @@ class ProcessedAtlas:
     def proc_pedidos(self,rawdf):
         """
         """
+        multiapartado_days_window = 20
         subset_columnas = ['numero_de_pedido', 'pedido_id_comercio_externo',
        'nombre_de_la_cuenta', 'id_am_vendedor',
        'comprador_nombre_de_la_cuenta', 'id_am_comprador', 'estado',
@@ -70,7 +71,12 @@ class ProcessedAtlas:
                         id_am_vendedor = lambda x: pd.to_numeric(x['id_am_vendedor'], errors='coerce').astype('Int64'),
                         fecha_de_creacion = lambda x: pd.to_datetime(x['fecha_de_creacion']).dt.strftime('%Y-%m-%d'),
                         )
-                )
+                .sort_values(by=['id_am_comprador','fecha_de_creacion'],ascending=[True,True])
+                .assign(days_since_last_order = lambda x: ((x.groupby('id_am_comprador')['fecha_de_creacion'].diff().dt.days)),
+                        orders_by_id_comprador = lambda x: x.groupby('id_am_comprador')['sf_order_id'].transform('nunique'),
+                        multiapartado = lambda x: np.where(x.days_since_last_order<=multiapartado_days_window,1,0))
+                .sort_values(by=['fecha_de_creacion','sf_order_id'],ascending=[True,True])
+                    )
         return pedidos
     
     def proc_clientes(self,rawdf):
