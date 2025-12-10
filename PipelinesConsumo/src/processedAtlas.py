@@ -213,7 +213,7 @@ class ProcessedAtlas:
         unique_visits = (rawdf
                         [subset_columns]
                         .rename(columns=rename_dict)
-                        .assign(date = lambda x: pd.to_datetime(x.date).dt.strftime(''),
+                        .assign(date = lambda x: pd.to_datetime(x.date).dt.strftime('%Y-%m-%d'),
                                 visit_type = lambda x: x.page_name.map(mapping_page_names))
                         [lambda x: x.visit_type.notna()]
                         .groupby(['date','visit_type'])
