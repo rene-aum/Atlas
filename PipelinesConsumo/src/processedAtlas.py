@@ -26,7 +26,7 @@ class ProcessedAtlas:
         """
         subset_columnas = ['id_am','sku','product_name','status','status_product','plate',
                    'order_id','order_created_at',
-                   'vin','engine_type','published_at','km','showroom']
+                   'vin','engine_type','created_at','published_at','km','showroom']
         rename_dict = {'vs_extra_url_key':'url',
                     'order_id':'last_commerce_order_id'}
 
@@ -37,6 +37,7 @@ class ProcessedAtlas:
         .rename(columns=rename_dict)
         .assign(order_created_at = lambda x: pd.to_datetime(x['order_created_at']).dt.strftime('%Y-%m-%d'),
                 published_at = lambda x: pd.to_datetime(x['published_at']).dt.strftime('%Y-%m-%d'),
+                created_at = lambda x: pd.to_datetime(x['created_at']).dt.strftime('%Y-%m-%d'),
                 id_am = lambda x: pd.to_numeric(x['id_am'], errors='coerce').astype('Int64'),
                 last_commerce_order_id = lambda x: pd.to_numeric(x['last_commerce_order_id'], errors='coerce').astype('Int64')
                 )
@@ -171,7 +172,7 @@ class ProcessedAtlas:
                         'app_step_6':'fv_app_step_6',
                         'app_step_8':'fv_app_step_8',
                         'app_step_9':'fv_app_step_9',
-                        'app_completed':'fv_app_completed'
+                        'app_step_10':'fv_app_step_10'
                     }
         funnel_digital_vendedor = (rawdf
                                 [subset_columnas]
