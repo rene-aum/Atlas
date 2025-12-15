@@ -162,7 +162,7 @@ class ProcessedAtlas:
         subset_columnas = ['date','id_am','application_name',
                    'app_click_start','app_page_visit',
                    'app_step_2','app_step_3', 'app_step_4',
-                   'app_step_6', 'app_step_8','app_step_9',
+                   'app_step_6', 'app_step_8','app_step_9','app_step_10',
                    'app_completed']
         rename_dict = {'app_click_start':'fv_app_click_start',
                         'app_page_visit':'fv_app_page_visit',
