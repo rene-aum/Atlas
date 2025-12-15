@@ -231,12 +231,13 @@ class ProcessedAtlas:
         pdp = (rawdf
                 .assign(id_am = lambda x:pd.to_numeric(x.id_am,errors='coerce').astype('Int64'),
                         date = lambda x: pd.to_datetime(x.date),
+                        page_views = lambda x: pd.to_numeric(x.page_views,errors='coerce').astpe('Int64')
                         view_type = lambda x: np.where(x.id_am.isna(),'unidentified_user_views','identified_user_views'))
                 .groupby(['date','sku','view_type'])
                 ['page_views'].sum()
                 .unstack('view_type').fillna(0)
                 .reset_index()
-                [lambda x: pd.to_datetime(x.date)>=pd.to_datetime(self.today)-timedelta(days=90)]
+                [lambda x: pd.to_datetime(x.date)>=(pd.to_datetime(self.today)-timedelta(days=90))]
                 )
         return pdp
 
