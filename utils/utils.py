@@ -7,7 +7,7 @@ mexico_tz = 'America/Mexico_City'
 
 def get_dates_dataframe(start='2024-03-01'):
     today = datetime.now(tz=timezone(mexico_tz))
-    all_dates = pd.DataFrame({'date':pd.date_range('2024-03-01',today.strftime('%Y-%m-%d'))})
+    all_dates = pd.DataFrame({'date':pd.date_range(start,today.strftime('%Y-%m-%d'))})
     return all_dates
 
 
