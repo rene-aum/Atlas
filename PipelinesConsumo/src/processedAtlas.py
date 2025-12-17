@@ -268,7 +268,31 @@ class ProcessedAtlas:
                 .pipe(process_columns)
                 )
         return res
-                    
+    
+    def proc_reporte_ventas(self,rawdf):
+        """
+        Docstring para proc_reporte_ventas
+        
+        :param self: Descripción
+        :param rawdf: Descripción
+        """
+        res = (rawdf
+                .rename(columns = {'Año':'anio',
+                                    'ID comprador':'id_am_comprador',
+                                    'ID pedido':'sf_order_id'})
+                .pipe(process_columns)
+                .assign(fecha_de_apartado = lambda x: pd.to_datetime(x.fecha_de_apartado,format='%d/%m/%Y').dt.strftime('%Y-%m-%d'),
+                        fecha_de_entrega = lambda x: pd.to_datetime(x.fecha_de_entrega,format='%d/%m/%Y').dt.strftime('%Y-%m-%d'),
+                        seguro = lambda x: x.seguro.fillna('no').str.lower(),
+                        garantia = lambda x: x.garantia.fillna('no').str.lower(),
+                        tipo_de_venta = lambda x: x.tipo_de_venta.str.lower(),
+                        espacio_am = lambda x: x.espacio_am.str.replace('ESPACIO ', '').str.lower().str.strip(),
+                        id_pedido = lambda x: x.id_pedido.astype('Int64'),
+                        id_am_comprador = lambda x: x.id_am_comprador.astype('Int64'),
+                )
+                )
+        return res
+                                    
     
 
 
