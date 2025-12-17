@@ -39,7 +39,8 @@ consumo_sheets_ids_dict = {'AcAdobeFunnelVendedorUsuario': '18NezvGLza7Xs1x0mLTz
                            'AcPublicaciones': '1NIvj4zjUO9N4fsiW1I85VI2RfTCT54nvbBON_l0xeYI',
                            'AcVisitasUnicas':'1jmbOj9a7-dnXUgH276lJ-blP-auDdWGemzia1RTsNEo',
                            'AcProductViews':'1nparJO5qpIRXa0KsXD7mn4HKwuJi422Wy4o7bqLDSfs',
-                           'AcConsolidadoBautoLastStatus':'1492T3lWxatZq9onjIEBKoHNpGa5DrMaCCvT9ETcBB8M'
+                           'AcConsolidadoBautoLastStatus':'1492T3lWxatZq9onjIEBKoHNpGa5DrMaCCvT9ETcBB8M',
+                           'AcPublicacionesCanceladas':'1AZdaqfSw6QV9eXNRYgnuizvSsWRcyBUJ4IgsZkcw9gk'
                            }
 
 # otros

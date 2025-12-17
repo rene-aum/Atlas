@@ -257,6 +257,18 @@ class ProcessedAtlas:
         
         return res
     
+    def proc_cancelaciones(self,rawdf):
+        """
+        Docstring para proc_cancelaciones
+        
+        :param self: Descripción
+        :param rawdf: Descripción
+        """
+        res = (rawdf
+                .pipe(process_columns)
+                )
+        return res
+                    
     
 
 
