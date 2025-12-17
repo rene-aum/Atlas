@@ -287,7 +287,7 @@ class ProcessedAtlas:
                         garantia = lambda x: x.garantia.fillna('no').str.lower(),
                         tipo_de_venta = lambda x: x.tipo_de_venta.str.lower(),
                         espacio_am = lambda x: x.espacio_am.str.replace('ESPACIO ', '').str.lower().str.strip(),
-                        id_pedido = lambda x: x.id_pedido.astype('Int64'),
+                        sf_order_id = lambda x: x.sf_order_id.astype('Int64'),
                         id_am_comprador = lambda x: x.id_am_comprador.astype('Int64'),
                 )
                 )
