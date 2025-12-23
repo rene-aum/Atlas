@@ -3,6 +3,7 @@ import pandas as pd
 import pytz
 from gspread_dataframe import set_with_dataframe,get_as_dataframe
 import io
+import time
 
 
 
@@ -37,25 +38,78 @@ def create_sheets_in_drive_folder(gc,file_name,folder_id,df_to_set=None):
         set_with_dataframe(worksheet, df_to_set)
     print(f"Google Sheet {file_name} created and updated in folder ID: {folder_id}")
 
-def update_sheets_in_drive_folder(gc,spreadsheet_id,worksheet_name,df_to_update):
+def update_sheets_in_drive_folder(
+        gc,
+        spreadsheet_id,
+        worksheet_name,
+        df_to_update,
+        retries: int = 3,
+        initial_delay: float = 2.0,
+        backoff_factor: float = 2.0,
+        ):
+    """
+    Update a Google Sheets worksheet with a DataFrame, retrying on failure.
 
-    try:
-        # 1. Open the existing spreadsheet by ID
-        spreadsheet = gc.open_by_key(spreadsheet_id)
+    Parameters
+    ----------
+    gc : gspread.Client
+        Authenticated gspread client.
+    spreadsheet_id : str
+        ID of the Google Sheet.
+    worksheet_name : str
+        Name of the worksheet to update.
+    df_to_update : pandas.DataFrame
+        DataFrame whose contents will replace the worksheet.
+    retries : int, default 3
+        Number of attempts in total (initial try + retries-1).
+    initial_delay : float, default 2.0
+        Seconds to sleep before the first retry.
+    backoff_factor : float, default 2.0
+        Multiplier applied to the delay after each failed attempt.
+    """
 
-        # 2. Access the worksheet by name
-        worksheet = spreadsheet.worksheet(worksheet_name)
+    attempt = 0
+    delay = initial_delay
+    last_exception = None
 
-        # 3. Clear the existing content of the worksheet
-        worksheet.clear()
+    while attempt < retries:
+        attempt += 1
+        try:
+            # 1. Open the existing spreadsheet by ID
+            spreadsheet = gc.open_by_key(spreadsheet_id)
 
-        # 4. Update the worksheet with the master_table data
-        set_with_dataframe(worksheet, df_to_update)
+            # 2. Access the worksheet by name
+            worksheet = spreadsheet.worksheet(worksheet_name)
 
-        print(f"Google Sheet with ID:{spreadsheet_id} - '{worksheet_name}'  updated with new data.")
+            # 3. Clear the existing content of the worksheet
+            worksheet.clear()
 
-    except Exception as e:
-        print(f"Spreadsheet with ID '{spreadsheet_id}' not found. Exception: {e}") 
+            # 4. Update the worksheet with the DataFrame
+            set_with_dataframe(worksheet, df_to_update)
+
+            print(
+                f"[attempt {attempt}/{retries}] "
+                f"Google Sheet {spreadsheet_id!r} - {worksheet_name!r} "
+                f"updated with new data."
+            )
+            return  # success → exit the function
+
+        except Exception as e:
+            last_exception = e
+            print(
+                f"[attempt {attempt}/{retries}] "
+                f"Failed to update sheet {spreadsheet_id!r} - {worksheet_name!r}: {e}"
+            )
+
+            if attempt >= retries:
+                # no more retries left: re-raise or handle as you prefer
+                print("Exhausted all retries; giving up.")
+                raise
+
+            # wait before the next retry
+            print(f"Retrying in {delay} seconds...")
+            time.sleep(delay)
+            delay *= backoff_factor
 
 def read_from_google_sheets(gc,spreadsheet_id,sheetname=None):
     """
