@@ -1,6 +1,7 @@
 # paths para lectura
 id_tracking_envios = "1lifjZ5PALlBAjGi5-jl23ckXPVGQ9sWx"
 id_reporte_ventas = "1W79C_bkTLmXUqQC7M6Z2B3-v7L9khJX1EoqDFawsLfg"
+id_edas_referenciados = "13avOAwqLvec7h301gOQdgbA8iVKMKstH_zzggaYYFMw"
 folder_id_bauto_gabo = '1RD9te3zDsGpZZdqwqfxaTgr1hvKMK2vj'
 
 # ids para escritura
@@ -41,7 +42,8 @@ consumo_sheets_ids_dict = {'AcAdobeFunnelVendedorUsuario': '18NezvGLza7Xs1x0mLTz
                            'AcProductViews':'1nparJO5qpIRXa0KsXD7mn4HKwuJi422Wy4o7bqLDSfs',
                            'AcConsolidadoBautoLastStatus':'1492T3lWxatZq9onjIEBKoHNpGa5DrMaCCvT9ETcBB8M',
                            'AcPublicacionesCanceladas':'1AZdaqfSw6QV9eXNRYgnuizvSsWRcyBUJ4IgsZkcw9gk',
-                           'AcVentas':'1LQ2RM5mQPhxwhxwoaPUO7J62jomNBmrsdNk3jzO8t48'
+                           'AcVentas':'1LQ2RM5mQPhxwhxwoaPUO7J62jomNBmrsdNk3jzO8t48',
+                           'AcEdas':"1gQopm8gkXaksJazdMa8nOYWmPCPXCm850I4ejiJ_3hg"
                            }
 
 # otros
