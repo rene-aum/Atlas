@@ -292,7 +292,32 @@ class ProcessedAtlas:
                 )
                 )
         return res
-                                    
+    
+    def proc_edas(self,rawdf):
+        """
+        Docstring para proc_edas
+        
+        :param self: Descripción
+        :param rawdf: Descripción
+        """
+        subset_columns=['folio','fecha_ref',
+                'nombre_completo_del_empleado','usuario_m',
+                'nombre_de_cliente','espacio','telefono_celular_del_cliente',
+                'correo_email_del_cliente','numero_de_cliente','observaciones_de_contactacion',
+                'numero_del_credito_formalizado_y_desembolsado']
+        edas_mod = (rawdf
+                    .pipe(process_columns)
+                    [lambda x: x['folio_preautorizado'].notna()]
+                    .assign(fecha_ref= lambda x: pd.to_datetime(x['marca_temporal'].str[0:10].str.strip().str.zfill(10),format='%d/%m/%Y').dt.strftime('%Y-%m-%d'),
+                            folio = lambda x: pd.to_numeric(x['folio_preautorizado'],errors='coerce').astype('Int64')
+                            )
+                    .sort_values(by='fecha_ref',ascending=False)
+                    .groupby('folio').head(1)
+                    [subset_columns]
+                    .reset_index(drop=True)
+                    )
+        return edas_mod
+                                            
     
 
 
