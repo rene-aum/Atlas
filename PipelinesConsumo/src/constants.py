@@ -2,6 +2,7 @@
 id_tracking_envios = "1lifjZ5PALlBAjGi5-jl23ckXPVGQ9sWx"
 id_reporte_ventas = "1W79C_bkTLmXUqQC7M6Z2B3-v7L9khJX1EoqDFawsLfg"
 id_edas_referenciados = "13avOAwqLvec7h301gOQdgbA8iVKMKstH_zzggaYYFMw"
+id_torre_de_control = '1qitnBwGCg7n-IFPaOBZfdBK2vCplNTqPOjpiJcoZX7k'
 folder_id_bauto_gabo = '1RD9te3zDsGpZZdqwqfxaTgr1hvKMK2vj'
 
 # ids para escritura
