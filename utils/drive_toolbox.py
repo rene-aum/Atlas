@@ -122,7 +122,9 @@ def read_from_google_sheets(gc,spreadsheet_id,sheetname=None):
     else:
         worksheet = spreadsheet.worksheet(sheetname)
     # Read the data into a pandas DataFrame
-    df = get_as_dataframe(worksheet)
+    df = get_as_dataframe(worksheet,
+                          evaluate_formulas=True,
+                        value_render_option="UNFORMATTED_VALUE")
 
     return df
 
