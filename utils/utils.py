@@ -78,3 +78,8 @@ def add_year_week(df, date_column="date"):
             )
     return new_df
 
+def remove_accents(text):
+    if isinstance(text, str):
+        return unidecode(text)
+    return text             
+
