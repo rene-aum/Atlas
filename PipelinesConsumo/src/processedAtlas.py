@@ -302,8 +302,11 @@ class ProcessedAtlas:
         """
         subset_columns=['folio','fecha_ref',
                 'nombre_completo_del_empleado','usuario_m',
-                'nombre_de_cliente','espacio','telefono_celular_del_cliente',
-                'correo_email_del_cliente','numero_de_cliente','observaciones_de_contactacion',
+                'nombre_de_cliente','espacio',
+                'telefono_celular_del_cliente',
+                    # 'correo_email_del_cliente',
+                'numero_de_cliente',
+                # 'observaciones_de_contactacion',
                 'numero_del_credito_formalizado_y_desembolsado']
         edas_mod = (rawdf
                     .pipe(process_columns)
