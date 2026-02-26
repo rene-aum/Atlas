@@ -4,6 +4,8 @@ import pytz
 from gspread_dataframe import set_with_dataframe,get_as_dataframe
 import io
 import time
+import requests
+import json
 
 
 
@@ -178,3 +180,26 @@ def create_csv_file_in_drive_folder(drive,folder_id,df,filename):
     file.Upload()
     print("Uploaded file ID:", file["id"])
     return file["id"]
+
+def send_google_chat_notification(webhook_url:str,msg:str):
+    # TWebhook
+    try:
+        # Mensaje
+        payload = {
+            "text": f"*{msg}*"
+        }
+
+        # Realizar el envío
+        response = requests.post(
+            webhook_url,
+            data=json.dumps(payload),
+            headers={'Content-Type': 'application/json; charset=UTF-8'}
+        )
+
+        if response.status_code == 200:
+            print("Notificación enviada a Google Chat.")
+        else:
+            print(f"Error al enviar: {response.status_code}")
+
+    except Exception as e:
+        print(f"Error en la función: {e}")
