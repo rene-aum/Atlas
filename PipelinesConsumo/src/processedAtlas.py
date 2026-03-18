@@ -26,7 +26,7 @@ class ProcessedAtlas:
         """
         subset_columnas = ['id_am','sku','product_name','status','status_product','plate',
                    'order_id','order_created_at',
-                   'vin','engine_type','created_at','published_at','updated_at','km','showroom']
+                   'vin','engine_type','created_at','published_at','updated_at','km','showroom','product_price']
         rename_dict = {'vs_extra_url_key':'url',
                     'order_id':'last_commerce_order_id'}
 
