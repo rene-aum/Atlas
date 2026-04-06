@@ -6,6 +6,7 @@ import io
 import time
 import requests
 import json
+import math
 
 
 
@@ -203,3 +204,135 @@ def send_google_chat_notification(webhook_url:str,msg:str):
 
     except Exception as e:
         print(f"Error en la función: {e}")
+
+def update_sheets_in_drive_folder_chunked(
+        gc,
+        spreadsheet_id,
+        worksheet_name,
+        df_to_update,
+        chunk_size: int = 10000,
+        retries: int = 3,
+        initial_delay: float = 2.0,
+        backoff_factor: float = 2.0,
+        clear_first: bool = True,
+        include_header: bool = True,
+        ):
+    """
+    Update a Google Sheets worksheet with a DataFrame in row chunks.
+
+    Parameters
+    ----------
+    gc : gspread.Client
+        Authenticated gspread client.
+    spreadsheet_id : str
+        ID of the Google Sheet.
+    worksheet_name : str
+        Name of the worksheet to update.
+    df_to_update : pandas.DataFrame
+        DataFrame to write.
+    chunk_size : int, default 10000
+        Number of dataframe rows per write request.
+    retries : int, default 3
+        Number of attempts per chunk.
+    initial_delay : float, default 2.0
+        Seconds before the first retry.
+    backoff_factor : float, default 2.0
+        Retry backoff multiplier.
+    clear_first : bool, default True
+        Whether to clear the sheet before writing.
+    include_header : bool, default True
+        Whether to write dataframe headers in the first chunk.
+
+    Notes
+    -----
+    - Uses worksheet.update(range_name=..., values=...) chunk by chunk.
+    - Keeps the sheet write pattern much lighter than one giant payload.
+    """
+
+    spreadsheet = gc.open_by_key(spreadsheet_id)
+    worksheet = spreadsheet.worksheet(worksheet_name)
+
+    if clear_first:
+        worksheet.clear()
+
+    n_rows, n_cols = df_to_update.shape
+
+    if include_header:
+        total_rows_to_write = n_rows + 1
+    else:
+        total_rows_to_write = n_rows
+
+    if total_rows_to_write == 0:
+        print(f"Sheet {spreadsheet_id!r} - {worksheet_name!r}: nothing to write.")
+        return
+
+    def _colnum_to_a1(col_num: int) -> str:
+        result = ""
+        while col_num > 0:
+            col_num, rem = divmod(col_num - 1, 26)
+            result = chr(65 + rem) + result
+        return result
+
+    last_col_letter = _colnum_to_a1(n_cols)
+
+    # write header first
+    start_row = 1
+    if include_header:
+        header_values = [df_to_update.columns.astype(str).tolist()]
+        header_range = f"A1:{last_col_letter}1"
+        worksheet.update(
+            range_name=header_range,
+            values=header_values,
+            value_input_option="RAW"
+        )
+        start_row = 2
+
+    n_chunks = math.ceil(n_rows / chunk_size)
+
+    for chunk_idx in range(n_chunks):
+        row_start = chunk_idx * chunk_size
+        row_end = min((chunk_idx + 1) * chunk_size, n_rows)
+
+        chunk_df = df_to_update.iloc[row_start:row_end]
+
+        # Replace NaN with empty string for Sheets
+        values = chunk_df.where(pd.notnull(chunk_df), "").values.tolist()
+
+        sheet_row_start = start_row + row_start
+        sheet_row_end = sheet_row_start + len(values) - 1
+        range_name = f"A{sheet_row_start}:{last_col_letter}{sheet_row_end}"
+
+        attempt = 0
+        delay = initial_delay
+
+        while attempt < retries:
+            attempt += 1
+            try:
+                worksheet.update(
+                    range_name=range_name,
+                    values=values,
+                    value_input_option="RAW"
+                )
+                print(
+                    f"[chunk {chunk_idx + 1}/{n_chunks}] "
+                    f"[attempt {attempt}/{retries}] "
+                    f"Wrote rows {row_start}:{row_end} "
+                    f"to {spreadsheet_id!r} - {worksheet_name!r}."
+                )
+                break
+
+            except Exception as e:
+                print(
+                    f"[chunk {chunk_idx + 1}/{n_chunks}] "
+                    f"[attempt {attempt}/{retries}] "
+                    f"Failed writing rows {row_start}:{row_end} "
+                    f"to {spreadsheet_id!r} - {worksheet_name!r}: {e}"
+                )
+
+                if attempt >= retries:
+                    print("Exhausted retries for current chunk; giving up.")
+                    raise
+
+                print(f"Retrying chunk in {delay} seconds...")
+                time.sleep(delay)
+                delay *= backoff_factor

@@ -119,7 +119,8 @@ class ProcessedAtlas:
                                                     None),
                             )
                     [lambda x: x.email_otp_validated.eq(1)| x.phone_number_otp_validated.eq(1)]
-                    [['id_am', 'billing_firstname', 'billing_lastname', 'email','phone', 'customer_since']]
+                    # [['id_am', 'billing_firstname', 'billing_lastname', 'email','phone', 'customer_since']]
+                    .sort_values(by=['customer_since','id_am'],ascending=[True,True])
                     )
         return clientes
     
