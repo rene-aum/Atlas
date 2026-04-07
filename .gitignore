@@ -1,0 +1,6 @@
+*.csv
+*.txt
+*.parquet
+*.pq
+.ipynb_checkpoints/
+*.dbdiagram
