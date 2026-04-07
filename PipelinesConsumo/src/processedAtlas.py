@@ -8,7 +8,8 @@ sys.path.append('../..')
 from src.constants import mexico_tz
 from utils.utils import (add_year_week,
                    process_columns,
-                   custom_read)
+                   custom_read,
+                   clean_mojibake)
 from utils.drive_toolbox import read_from_google_sheets
 import pytz
 
@@ -122,6 +123,12 @@ class ProcessedAtlas:
                     # [['id_am', 'billing_firstname', 'billing_lastname', 'email','phone', 'customer_since']]
                     .sort_values(by=['customer_since','id_am'],ascending=[True,True])
                     )
+        
+        # clientes  =  (clientes
+        #               .assign(billing_firstname = lambda x: x.billing_firstname.apply(clean_mojibake),
+        #                       billing_lastname = lambda x: x.billing_lastname.apply(clean_mojibake),
+        #                       nickname = lambda x: x.nickname.apply(clean_mojibake))
+        #              )
         return clientes
     
     def proc_adobe_funnel_comprador(self,rawdf, tipo='total'):

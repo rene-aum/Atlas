@@ -2,6 +2,7 @@ import pandas as pd
 from unidecode import unidecode
 from datetime import datetime
 from pytz import timezone
+import unicodedata
 
 mexico_tz = 'America/Mexico_City'
 
@@ -81,5 +82,28 @@ def add_year_week(df, date_column="date"):
 def remove_accents(text):
     if isinstance(text, str):
         return unidecode(text)
-    return text             
+    return text 
+
+def clean_mojibake(x):
+    if pd.isna(x):
+        return x
+
+    x = str(x)
+
+    # Repair common mojibake before removing accents
+    for enc in ("macroman", "latin1", "cp1252"):
+        try:
+            repaired = x.encode(enc).decode("utf-8")
+            # only keep the repaired version if it looks different
+            if repaired != x:
+                x = repaired
+                break
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+
+    # Remove accents
+    x = unicodedata.normalize("NFKD", x)
+    x = x.encode("ascii", "ignore").decode("ascii")
+
+    return x.upper()           
 
