@@ -330,6 +330,23 @@ class ProcessedAtlas:
                     .reset_index(drop=True)
                     )
         return edas_mod
+    
+    def proc_vehicle_status_extra(self,rawdf):
+        """
+        Docstring para proc_vehicle_status_extra
+        
+        :param self: Descripción
+        :param rawdf: Descripción
+        """
+        subset_columns=['sku','images_count','url_key','thumbnail','body_type']
+        res_mod = (rawdf
+        .sort_values(by=['sku','published_at','created_at','updated_at'],ascending=[True,False,False,False])
+        [subset_columns]
+        .assign(body_type = lambda x: x.body_type.str.lower())
+        .drop_duplicates(subset=['sku'], keep='first')
+        )
+        return res_mod
+        
                                             
     
 

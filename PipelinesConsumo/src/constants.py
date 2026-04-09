@@ -29,7 +29,9 @@ raw_output_ids={"t1_RawVehicleStatus":"1LnxD5KjR3iEbN2nmomUZwMp3kLYzES06",
                 "t6_RawProductViews":"13OF3Z8UcI4cANFzUYY2XlJWsiZHn03dG",
                 "t7_RawCancelaciones":"10S_yxb84JeQ5CiOdVsO3ARB1Eg2h2TMI",
                 "t8_RawCtaAdobe":"1s9W1EqiF0jcetbtneXEpLU-5Hk5n1bmz",
-                "t9_RawConsolidadBaseTotalAutomarket":"1VJIdSi-hx8Z2wBLBNtRdr4NEGNpBDhn0"}
+                "t9_RawConsolidadBaseTotalAutomarket":"1VJIdSi-hx8Z2wBLBNtRdr4NEGNpBDhn0",
+                "t10_RawVehicleStatusExtra":"1WuQY9i0MnEQSjm7eIe4L5fIDl6I4Cnv8"
+                }
 # consumo outputs ids sheets
 
 consumo_sheets_ids_dict = {'AcAdobeFunnelVendedorUsuario': '18NezvGLza7Xs1x0mLTzDf__qW3w0BS3u_IrFqtDeu0Q',
@@ -45,7 +47,8 @@ consumo_sheets_ids_dict = {'AcAdobeFunnelVendedorUsuario': '18NezvGLza7Xs1x0mLTz
                            'AcPublicacionesCanceladas':'1AZdaqfSw6QV9eXNRYgnuizvSsWRcyBUJ4IgsZkcw9gk',
                            'AcVentas':'1LQ2RM5mQPhxwhxwoaPUO7J62jomNBmrsdNk3jzO8t48',
                            'AcEdas':"1gQopm8gkXaksJazdMa8nOYWmPCPXCm850I4ejiJ_3hg",
-                           'AcBusinessCase26':"1ScHIf4s3XyPU9_EU_uR5kKa3TR1nK00HudTPheU04ho"
+                           'AcBusinessCase26':"1ScHIf4s3XyPU9_EU_uR5kKa3TR1nK00HudTPheU04ho",
+                           "AcSkuExtra":"1JSmpWD7SkCBKGpzYCtuExVVjXkqeMY6S46RXMmxoLUc"
                            }
 
 # otros
