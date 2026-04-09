@@ -24,6 +24,7 @@ class RawAtlas:
     t7 = None
     t8 = None
     t9 = None
+    t10 = None
 
 
     def __init__(self):
@@ -212,6 +213,27 @@ class RawAtlas:
                   )
             self.t9 = consolidado_raw
         return self.t9
+    
+    def t10_raw_vehicle_status_extra(self, **custom_read_args):
+        """ 
+        """
+        if self.t10 is None:
+            vs_raw = (custom_read(**custom_read_args)
+                  .pipe(process_columns)
+                  )
+            rename_dict = {
+                "customer_id": "id_am",
+                "niv/vin":"vin"
+            }
+            columns_to_drop = vs_raw.filter(regex='^column').columns
+            res = (
+                vs_raw
+                .drop(columns=columns_to_drop)
+                .rename(columns=rename_dict)
+                
+            )
+            self.t10 = res
+        return self.t10
 
 
 

@@ -336,3 +336,118 @@ def update_sheets_in_drive_folder_chunked(
                 print(f"Retrying chunk in {delay} seconds...")
                 time.sleep(delay)
                 delay *= backoff_factor
+
+def insert_value_by_row_id_and_column_name(
+        gc,
+        spreadsheet_id: str,
+        worksheet_name: str,
+        row_id,
+        column_name: str,
+        value_to_insert,
+        id_col: int = 1,
+        header_row: int = 1,
+        retries: int = 3,
+        initial_delay: float = 2.0,
+        backoff_factor: float = 2.0,
+        ):
+    """
+    Insert/update a value in a column (by name) for the row whose ID matches `row_id`.
+
+    Parameters
+    ----------
+    gc : gspread.Client
+        Authenticated gspread client.
+    spreadsheet_id : str
+        ID of the Google Sheet.
+    worksheet_name : str
+        Name of the worksheet.
+    row_id : Any
+        Value to search in the ID column.
+    column_name : str
+        Header name of the column to update (must exist in header_row).
+    value_to_insert : Any
+        Value to write into the matched row and target column.
+    id_col : int, default 1
+        Column index (1-based) where the row ID is stored.
+    header_row : int, default 1
+        Row index where headers are located.
+    retries : int, default 3
+        Number of attempts in total.
+    initial_delay : float, default 2.0
+        Seconds before first retry.
+    backoff_factor : float, default 2.0
+        Retry backoff multiplier.
+
+    Returns
+    -------
+    dict
+        Metadata about the update.
+    """
+
+    attempt = 0
+    delay = initial_delay
+
+    while attempt < retries:
+        attempt += 1
+        try:
+            # 1. Open spreadsheet
+            spreadsheet = gc.open_by_key(spreadsheet_id)
+            worksheet = spreadsheet.worksheet(worksheet_name)
+
+            # 2. Read header row
+            headers = worksheet.row_values(header_row)
+            headers_normalized = [str(h).strip() for h in headers]
+
+            if column_name not in headers_normalized:
+                raise ValueError(
+                    f"Column {column_name!r} not found in header row {header_row}."
+                )
+
+            target_col = headers_normalized.index(column_name) + 1  # 1-based index
+
+            # 3. Read ID column
+            id_values = worksheet.col_values(id_col)
+            row_id_str = str(row_id).strip()
+
+            matched_row = None
+            for i, current_id in enumerate(id_values, start=1):
+                if str(current_id).strip() == row_id_str:
+                    matched_row = i
+                    break
+
+            if matched_row is None:
+                raise ValueError(
+                    f"Row ID {row_id!r} not found in column {id_col}."
+                )
+
+            # 4. Update cell
+            worksheet.update_cell(matched_row, target_col, value_to_insert)
+
+            print(
+                f"[attempt {attempt}/{retries}] "
+                f"Updated sheet {spreadsheet_id!r} - {worksheet_name!r}: "
+                f"row_id={row_id!r}, matched_row={matched_row}, "
+                f"column_name={column_name!r}, value={value_to_insert!r}"
+            )
+
+            return {
+                "updated": True,
+                "row_id": row_id,
+                "matched_row": matched_row,
+                "column_name": column_name,
+                "value_inserted": value_to_insert,
+            }
+
+        except Exception as e:
+            print(
+                f"[attempt {attempt}/{retries}] "
+                f"Failed to insert value into sheet {spreadsheet_id!r} - {worksheet_name!r}: {e}"
+            )
+
+            if attempt >= retries:
+                print("Exhausted all retries; giving up.")
+                raise
+
+            print(f"Retrying in {delay} seconds...")
+            time.sleep(delay)
+            delay *= backoff_factor
