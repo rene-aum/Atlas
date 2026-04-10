@@ -80,7 +80,7 @@ def update_sheets_in_drive_folder(
         try:
             # 1. Open the existing spreadsheet by ID
             spreadsheet = gc.open_by_key(spreadsheet_id)
-
+            spreadsheet_title = spreadsheet.title
             # 2. Access the worksheet by name
             worksheet = spreadsheet.worksheet(worksheet_name)
 
@@ -92,7 +92,7 @@ def update_sheets_in_drive_folder(
 
             print(
                 f"[attempt {attempt}/{retries}] "
-                f"Google Sheet {spreadsheet_id!r} - {worksheet_name!r} "
+                f"Google Sheet {spreadsheet_title!r} - {worksheet_name!r} "
                 f"updated with new data."
             )
             return  # success → exit the function
@@ -101,7 +101,7 @@ def update_sheets_in_drive_folder(
             last_exception = e
             print(
                 f"[attempt {attempt}/{retries}] "
-                f"Failed to update sheet {spreadsheet_id!r} - {worksheet_name!r}: {e}"
+                f"Failed to update sheet {spreadsheet_title!r} - {worksheet_name!r}: {e}"
             )
 
             if attempt >= retries:
