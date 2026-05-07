@@ -114,22 +114,64 @@ def update_sheets_in_drive_folder(
             time.sleep(delay)
             delay *= backoff_factor
 
-def read_from_google_sheets(gc,spreadsheet_id,sheetname=None):
+def read_from_google_sheets(
+        gc,
+        spreadsheet_id,
+        sheetname=None,
+        retries: int = 3,
+        initial_delay: float = 2.0,
+        backoff_factor: float = 2.0,
+        ):
     """
+    Read a Google Sheets worksheet into a DataFrame, retrying on failure.
+    Parameters
+    ----------
+    gc : gspread.Client
+        Authenticated gspread client.
+    spreadsheet_id : str
+        ID of the Google Sheet.
+    sheetname : str, optional
+        Name of the worksheet. If None, reads the first sheet.
+    retries : int, default 3
+        Number of attempts in total (initial try + retries-1).
+    initial_delay : float, default 2.0
+        Seconds to sleep before the first retry.
+    backoff_factor : float, default 2.0
+        Multiplier applied to the delay after each failed attempt.
     """
-
-    # Open the Google Sheet using the extracted ID
-    spreadsheet = gc.open_by_key(spreadsheet_id)
-    if sheetname is  None:
-        worksheet = spreadsheet.sheet1  # Or select a specific worksheet
-    else:
-        worksheet = spreadsheet.worksheet(sheetname)
-    # Read the data into a pandas DataFrame
-    df = get_as_dataframe(worksheet,
-                          evaluate_formulas=True,
-                        value_render_option="UNFORMATTED_VALUE")
-
-    return df
+    attempt = 0
+    delay = initial_delay
+    last_exception = None
+    while attempt < retries:
+        attempt += 1
+        try:
+            spreadsheet = gc.open_by_key(spreadsheet_id)
+            spreadsheet_title = spreadsheet.title
+            if sheetname is None:
+                worksheet = spreadsheet.sheet1
+            else:
+                worksheet = spreadsheet.worksheet(sheetname)
+            df = get_as_dataframe(worksheet,
+                                  evaluate_formulas=True,
+                                  value_render_option="UNFORMATTED_VALUE")
+            print(
+                f"[attempt {attempt}/{retries}] "
+                f"Google Sheet {spreadsheet_title!r} - {sheetname or 'sheet1'!r} "
+                f"read successfully."
+            )
+            return df
+        except Exception as e:
+            last_exception = e
+            print(
+                f"[attempt {attempt}/{retries}] "
+                f"Failed to read sheet {spreadsheet_title!r} - {sheetname or 'sheet1'!r}: {e}"
+            )
+            if attempt >= retries:
+                print("Exhausted all retries; giving up.")
+                raise
+            print(f"Retrying in {delay} seconds...")
+            time.sleep(delay)
+            delay *= backoff_factor
 
 def list_file_ids_for_drive_folder(drive, folder_id:str):
     file_list = drive.ListFile({'q': f"'{folder_id}' in parents and trashed=false"}).GetList()
