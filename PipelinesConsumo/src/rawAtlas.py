@@ -2,7 +2,7 @@ from unidecode import unidecode
 import pandas as pd
 from datetime import timedelta, datetime
 import sys
-from src.constants import mexico_tz
+from PipelinesConsumo.src.constants import mexico_tz
 from utils.utils import (add_year_week,
                    process_columns,
                    custom_read)
