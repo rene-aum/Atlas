@@ -1,4 +1,3 @@
-# pyproject.toml
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.backends.legacy:build"
@@ -6,6 +5,11 @@ build-backend = "setuptools.backends.legacy:build"
 [project]
 name = "atlas-utils"
 version = "0.1.0"
+dependencies = [
+    "unidecode",
+    "boto3",
+    "s3fs"
+]
 
 [tool.setuptools.packages.find]
 include = ["utils*", "PipelinesConsumo*", "src*"]
