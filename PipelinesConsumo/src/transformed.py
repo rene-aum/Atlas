@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 from datetime import timedelta, datetime
 import sys
-sys.path.append('../src')
-sys.path.append('../..')
 from src.constants import mexico_tz
 from utils.utils import (add_year_week,
                    process_columns,

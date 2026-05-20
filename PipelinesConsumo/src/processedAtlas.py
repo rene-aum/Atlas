@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 from datetime import timedelta, datetime
 import sys
-sys.path.append('../src')
-sys.path.append('../..')
 from src.constants import mexico_tz
 from utils.utils import (add_year_week,
                    process_columns,
@@ -120,15 +118,8 @@ class ProcessedAtlas:
                                                     None),
                             )
                     [lambda x: x.email_otp_validated.eq(1)| x.phone_number_otp_validated.eq(1)]
-                    # [['id_am', 'billing_firstname', 'billing_lastname', 'email','phone', 'customer_since']]
                     .sort_values(by=['customer_since','id_am'],ascending=[True,True])
                     )
-        
-        # clientes  =  (clientes
-        #               .assign(billing_firstname = lambda x: x.billing_firstname.apply(clean_mojibake),
-        #                       billing_lastname = lambda x: x.billing_lastname.apply(clean_mojibake),
-        #                       nickname = lambda x: x.nickname.apply(clean_mojibake))
-        #              )
         return clientes
     
     def proc_adobe_funnel_comprador(self,rawdf, tipo='total'):
@@ -269,10 +260,6 @@ class ProcessedAtlas:
     
     def proc_cancelaciones(self,rawdf):
         """
-        Docstring para proc_cancelaciones
-        
-        :param self: Descripción
-        :param rawdf: Descripción
         """
         res = (rawdf
                 .pipe(process_columns)
@@ -281,10 +268,6 @@ class ProcessedAtlas:
     
     def proc_reporte_ventas(self,rawdf):
         """
-        Docstring para proc_reporte_ventas
-        
-        :param self: Descripción
-        :param rawdf: Descripción
         """
         res = (rawdf
                 .rename(columns = {'Año':'anio',
@@ -305,18 +288,11 @@ class ProcessedAtlas:
     
     def proc_edas(self,rawdf):
         """
-        Docstring para proc_edas
-        
-        :param self: Descripción
-        :param rawdf: Descripción
         """
         subset_columns=['folio','fecha_ref',
                 'nombre_completo_del_empleado','usuario_m',
                 'nombre_de_cliente','espacio',
                 'telefono_celular_del_cliente',
-                    # 'correo_email_del_cliente',
-                # 'numero_de_cliente', 
-                # 'observaciones_de_contactacion',
                 'numero_del_credito_formalizado_y_desembolsado']
         edas_mod = (rawdf
                     .pipe(process_columns)
@@ -333,10 +309,6 @@ class ProcessedAtlas:
     
     def proc_vehicle_status_extra(self,rawdf):
         """
-        Docstring para proc_vehicle_status_extra
-        
-        :param self: Descripción
-        :param rawdf: Descripción
         """
         subset_columns=['sku','images_count','url_key','thumbnail','body_type']
         res_mod = (rawdf
@@ -346,13 +318,3 @@ class ProcessedAtlas:
         .drop_duplicates(subset=['sku'], keep='first')
         )
         return res_mod
-        
-                                            
-    
-
-
-
-
-    
-
-
