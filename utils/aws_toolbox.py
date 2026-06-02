@@ -69,9 +69,17 @@ class AWSToolbox:
                 "set_credentials_colab can only be used inside Google Colab."
             ) from e
 
+        def _get_optional_secret(name):
+            try:
+                return userdata.get(name)
+            except Exception as e:
+                if e.__class__.__name__ == "SecretNotFoundError":
+                    return None
+                raise
+
         self.key = userdata.get("AWS_ACCESS_KEY_ID")
         self.secret = userdata.get("AWS_SECRET_ACCESS_KEY")
-        self.token = userdata.get("AWS_SESSION_TOKEN") or None
+        self.token = _get_optional_secret("AWS_SESSION_TOKEN") or None
 
         if not self.key or not self.secret:
             raise ValueError(
