@@ -58,6 +58,40 @@ class AWSToolbox:
         self._session = None
         return "Successfully stored credentials"
 
+    def set_credentials_colab(self, store_in_env=True):
+        """
+        Load AWS credentials from Google Colab userdata.
+        """
+        try:
+            from google.colab import userdata
+        except ImportError as e:
+            raise RuntimeError(
+                "set_credentials_colab can only be used inside Google Colab."
+            ) from e
+
+        self.key = userdata.get("AWS_ACCESS_KEY_ID")
+        self.secret = userdata.get("AWS_SECRET_ACCESS_KEY")
+        self.token = userdata.get("AWS_SESSION_TOKEN") or None
+
+        if not self.key or not self.secret:
+            raise ValueError(
+                "Missing Colab AWS secrets. Please set AWS_ACCESS_KEY_ID and "
+                "AWS_SECRET_ACCESS_KEY in Colab userdata."
+            )
+
+        if store_in_env:
+            os.environ["AWS_ACCESS_KEY_ID"] = self.key
+            os.environ["AWS_SECRET_ACCESS_KEY"] = self.secret
+            if self.token:
+                os.environ["AWS_SESSION_TOKEN"] = self.token
+            else:
+                os.environ.pop("AWS_SESSION_TOKEN", None)
+
+        # reset cached clients
+        self._fs = None
+        self._session = None
+        return "Successfully stored credentials from Colab"
+
     @property
     def session(self):
         """
