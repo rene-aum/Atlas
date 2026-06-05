@@ -6,11 +6,11 @@ import sys
 sys.path.append('../src')
 sys.path.append('../..')
 from src.constants import mexico_tz
-from utils.utils import (add_year_week,
+from automarket_utils.core import (add_year_week,
                    process_columns,
                    custom_read,
                    clean_mojibake)
-from utils.drive_toolbox import read_from_google_sheets
+from automarket_utils.drive import read_from_google_sheets
 import pytz
 
 app_step_rename_dict = {}
