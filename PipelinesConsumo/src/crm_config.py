@@ -8,7 +8,7 @@ one place, instead of being hidden inside notebook cells.
 CRM_SOURCE_FOLDER_ID = "17jg82rYHkuGf2Vbx_HIvEWNjQuRZvulv"
 
 # Set this from the notebook or constants once the traceability folder exists.
-CRM_RAW_SNAPSHOT_FOLDER_ID = "1GIjtJ52Epb_aYXGoCE-QFXTnEreptQiE"
+CRM_RAW_SNAPSHOT_FOLDER_ID = "1m5LMB1ushE6VzhbuRNBJV9OE6TSDbcBm"
 
 # Optional folder for timestamped TXT execution logs. If None, the pipeline
 # functions can receive log_folder_id explicitly from the notebook.
