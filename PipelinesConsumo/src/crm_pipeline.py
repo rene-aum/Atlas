@@ -32,10 +32,18 @@ except ModuleNotFoundError:
 
 
 def get_crm_run_timestamp():
+    """Return the CRM run timestamp used in filenames, logs, and metadata."""
     return datetime.now(tz=pytz.timezone(mexico_tz)).strftime("%Y%m%d_%H%M%S")
 
 
 def add_run_metadata(df, snapshot_timestamp):
+    """
+    Add lightweight lineage columns before writing a consumo output.
+
+    The raw snapshots remain untouched; these metadata columns are only added to
+    outputs written to Atlas Consumo so users can see which CRM run produced the
+    current sheet contents.
+    """
     return df.assign(
         run_date=pd.to_datetime(snapshot_timestamp, format="%Y%m%d_%H%M%S").strftime(
             "%Y-%m-%d"
@@ -57,9 +65,19 @@ def run_crm_raw_snapshot(
     """
     Download CRM source files and write timestamped raw snapshots to Drive.
 
-    Returns a dictionary with local file metadata, Drive snapshot IDs, and the
-    manifest DataFrame. If raw_snapshot_folder_id is None, files are downloaded
-    but snapshots are skipped.
+    This is the raw stage of the CRM pipeline. It copies the current overwritten
+    Salesforce exports from the source Drive folder into the runtime, then writes
+    timestamped CSV snapshots into a dated child folder under
+    raw_snapshot_folder_id.
+
+    A TXT log is uploaded in finally, so the log is still attempted if download
+    or snapshot creation fails.
+
+    Returns
+    -------
+    dict
+        timestamp, downloaded source metadata, snapshot Drive IDs, manifest
+        DataFrame, raw log Drive ID, and rendered log text.
     """
     timestamp = timestamp or get_crm_run_timestamp()
     logger = CrmRunLogger(
@@ -134,6 +152,12 @@ def run_crm_raw_snapshot(
 
 
 def build_crm_consumo_outputs(downloaded_sources, report_keys=None, logger=None):
+    """
+    Read downloaded CRM files and build DataFrames without writing to Drive.
+
+    This is useful for tests and notebook inspection. It runs the same processing
+    path used by run_crm_consumo but stops before updating Atlas Consumo sheets.
+    """
     raw_reader = RawCrmAtlas()
     raw_dfs = raw_reader.read_local_sources(
         downloaded_sources,
@@ -159,6 +183,23 @@ def write_crm_consumo_outputs(
 
     By default only the consumption-facing reports are written, while
     intermediate DataFrames remain available in the returned outputs.
+
+    Parameters
+    ----------
+    gc : gspread.Client
+        Authenticated Google Sheets client.
+    outputs : dict
+        Output DataFrames from build_crm_consumo_outputs.
+    consumo_output_ids : dict, optional
+        Mapping from output key to spreadsheet ID. Defaults to crm_config.py.
+    output_keys : list, optional
+        Subset of outputs to write. Defaults to the keys configured in
+        consumo_output_ids.
+
+    Returns
+    -------
+    dict
+        Write summary by output key with sheet ID, sheet name, rows, and columns.
     """
     consumo_output_ids = consumo_output_ids or CRM_CONSUMO_OUTPUT_IDS
     sheet_names = sheet_names or CRM_CONSUMO_SHEET_NAMES
@@ -246,6 +287,22 @@ def run_crm_consumo(
     include_metadata=True,
     log_folder_id=CRM_LOG_FOLDER_ID,
 ):
+    """
+    Build CRM consumo outputs and optionally write them to Google Sheets.
+
+    This is the process/consumo stage. It reads local files downloaded by the raw
+    stage, applies ProcessedCrmAtlas transformations, and optionally updates the
+    configured Atlas Consumo sheets.
+
+    A TXT log is uploaded in finally, so the log is still attempted if reading,
+    processing, or writing fails.
+
+    Returns
+    -------
+    dict
+        Built output DataFrames, write summary, consumo log Drive ID, and
+        rendered log text.
+    """
     snapshot_timestamp = snapshot_timestamp or get_crm_run_timestamp()
     logger = CrmRunLogger(
         "consumo",
@@ -326,6 +383,14 @@ def run_crm_pipeline(
     2. write raw snapshots for traceability
     3. process CRM consumption outputs
     4. optionally write selected outputs to Atlas Consumo
+
+    This is the single function most notebooks should call. Use write_outputs=False
+    for dry runs that build and preview outputs without overwriting Sheets.
+
+    Returns
+    -------
+    dict
+        The shared timestamp plus nested raw and consumo stage results.
     """
     timestamp = get_crm_run_timestamp()
     raw_result = run_crm_raw_snapshot(

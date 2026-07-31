@@ -30,20 +30,30 @@ class ProcessedCrmAtlas:
     """Business transforms for Salesforce CRM reports used by Atlas Consumo."""
 
     def __init__(self):
+        """Store the run date in Mexico City timezone for date-window logic."""
         self.today = datetime.now(tz=pytz.timezone(mexico_tz)).strftime("%Y-%m-%d")
 
     @staticmethod
     def _normalize_value(value):
+        """Lowercase, trim, and remove accents from text values only."""
         if isinstance(value, str):
             return unidecode(value).strip().lower()
         return value
 
     @classmethod
     def _normalize_series(cls, series):
+        """Apply CRM text normalization to every value in a pandas Series."""
         return series.apply(cls._normalize_value)
 
     @staticmethod
     def _to_datetime_str(series, fmt="%Y-%m-%d", utc=False, tz=None):
+        """
+        Convert a date/datetime Series to formatted strings with safe coercion.
+
+        Invalid dates become null-like values instead of breaking the whole
+        transform. Use utc=True and tz=mexico_tz for Salesforce UTC timestamps
+        that need to be rendered in local Mexico City time.
+        """
         dt = pd.to_datetime(series, errors="coerce", utc=utc)
         if utc and tz:
             dt = dt.dt.tz_convert(tz)
@@ -53,14 +63,17 @@ class ProcessedCrmAtlas:
 
     @staticmethod
     def _to_int(series):
+        """Convert a Series to pandas nullable integers, coercing bad values."""
         return pd.to_numeric(series, errors="coerce").astype("Int64")
 
     @staticmethod
     def _select_existing_columns(df, columns):
+        """Select the requested output columns that exist in the DataFrame."""
         return df[[col for col in columns if col in df.columns]]
 
     @staticmethod
     def _dedupe_columns(columns):
+        """Preserve column order while removing duplicate column names."""
         seen = set()
         result = []
         for col in columns:
@@ -70,6 +83,12 @@ class ProcessedCrmAtlas:
         return result
 
     def _validate_columns(self, df, table_name):
+        """
+        Verify that a raw Salesforce export has the configured required columns.
+
+        This fails early with the table name and missing Salesforce field names,
+        which makes source/report drift easier to diagnose from the CRM log.
+        """
         missing = [
             col
             for col in CRM_REQUIRED_COLUMNS.get(table_name, [])
@@ -81,10 +100,18 @@ class ProcessedCrmAtlas:
             )
 
     def _rename(self, rawdf, table_name):
+        """Validate and rename one Salesforce export using crm_config.py."""
         self._validate_columns(rawdf, table_name)
         return rawdf.rename(columns=CRM_RENAME_DICTS[table_name])
 
     def proc_pedidos(self, rawdf):
+        """
+        Normalize the Salesforce Pedidos export.
+
+        Produces typed order/customer IDs, normalized order status, and helper
+        fields parsed from opportunity_name such as opportunity_source and
+        opportunity_creation_date.
+        """
         pedidos = (
             self._rename(rawdf, "pedidos")
             .assign(
@@ -107,6 +134,13 @@ class ProcessedCrmAtlas:
         return pedidos
 
     def proc_oportunidades(self, rawdf):
+        """
+        Normalize the Salesforce Oportunidades export.
+
+        Converts buyer IDs, renders Salesforce UTC creation timestamps in Mexico
+        City time, normalizes source/contact fields, and keeps opportunity-level
+        profiling/credit attributes ready for the final opportunities report.
+        """
         oportunidades = (
             self._rename(rawdf, "oportunidades")
             .assign(
@@ -139,6 +173,13 @@ class ProcessedCrmAtlas:
         return oportunidades
 
     def proc_casos(self, rawdf):
+        """
+        Normalize the Salesforce Casos export.
+
+        Keeps only cases with a subject, standardizes order IDs and case dates,
+        and adds case_subject_clean for accent-insensitive business filters like
+        perfilamiento contact center / credito.
+        """
         casos = (
             self._rename(rawdf, "casos")
             .assign(
@@ -154,6 +195,13 @@ class ProcessedCrmAtlas:
         return casos
 
     def proc_citas(self, rawdf):
+        """
+        Normalize the Salesforce Citas export.
+
+        Converts appointment/order/customer IDs, standardizes created and
+        scheduled timestamps, and normalizes appointment status/work type for
+        the buyer appointment summary.
+        """
         citas = (
             self._rename(rawdf, "citas")
             .assign(
@@ -178,6 +226,13 @@ class ProcessedCrmAtlas:
         return citas
 
     def proc_solicitudes_credito(self, rawdf):
+        """
+        Normalize the Salesforce Solicitudes de Credito export.
+
+        Standardizes IDs, credit dates, and text statuses. The resulting table is
+        both a consumption output and an input for identifying API vs contingency
+        credit origin in proc_reporte_oportunidades.
+        """
         solicitudes = (
             self._rename(rawdf, "solicitudes_credito")
             .assign(
@@ -217,6 +272,12 @@ class ProcessedCrmAtlas:
         return solicitudes
 
     def proc_historico_casos(self, rawdf):
+        """
+        Normalize the Salesforce Historico Casos export.
+
+        Adds cleaned versions of field, old_value, and new_value so assignment
+        events can be detected reliably despite accents/case differences.
+        """
         historico = (
             self._rename(rawdf, "historico_casos")
             .assign(
@@ -240,6 +301,19 @@ class ProcessedCrmAtlas:
         solicitudes_credito,
         historico_casos,
     ):
+        """
+        Build the CRM opportunities consumption report.
+
+        This report enriches oportunidades with:
+        - Contact-center and credit profiling case IDs/statuses.
+        - First assignment owner/date inferred from Historico Casos.
+        - Credit origin classification from Solicitudes Credito.
+        - Pedido counts and open-pedido counts.
+        - Buyer appointment counts, first/last appointment dates, and completed
+          appointment counts.
+
+        Inputs are already-normalized DataFrames from the proc_* methods above.
+        """
         casos_perfilamiento_sc = (
             casos[lambda x: x.case_subject_clean.eq("perfilamiento contact center")]
             .rename(
@@ -435,6 +509,12 @@ class ProcessedCrmAtlas:
         )
 
     def _run_logged_processor(self, logger, step, table_name, func, rawdf):
+        """
+        Execute one proc_* method with consistent log events and error context.
+
+        This wrapper keeps build_consumo_outputs readable while still recording
+        input/output row counts and the exact table that failed.
+        """
         if logger:
             logger.info(
                 f"consumo.{step}.start",
@@ -464,6 +544,23 @@ class ProcessedCrmAtlas:
         return result
 
     def build_consumo_outputs(self, raw_dfs, logger=None):
+        """
+        Build all CRM consumption/intermediate outputs from raw DataFrames.
+
+        Parameters
+        ----------
+        raw_dfs : dict
+            Raw DataFrames keyed by CRM table name, typically from
+            RawCrmAtlas.read_local_sources.
+        logger : CrmRunLogger, optional
+            Captures one log event per table transform and report build.
+
+        Returns
+        -------
+        dict
+            Normalized intermediate tables plus final consumption outputs such
+            as reporte_oportunidades and solicitudes_credito.
+        """
         pedidos = self._run_logged_processor(
             logger,
             "proc_pedidos",
