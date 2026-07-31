@@ -118,7 +118,6 @@ CRM_RENAME_DICTS = {
         "AppointmentNumber": "numero_cita",
         "MX_ATN_OrderId__r.MX_ATN_CommerceId__c": "commerce_order_id",
         "MX_ATN_OrderId__r.OpportunityId": "opportunity_id",
-        "MX_ATN_OrderId__r.MX_ATN_AssetId__r.MX_ATN_CommerceId__c": "sku",
         "MX_ATN_vehicle__c": "marca",
         "Account.MX_ATN_CommerceId__c": "id_am",
         "SchedStartTime": "sched_start_time",
