@@ -9,10 +9,27 @@ from automarket_utils.drive import (
     create_csv_file_in_drive_folder,
     from_drive_to_local,
     list_file_ids_for_drive_folder,
-    create_folder_in_drive_folder
+    write_csv_to_drive,
 )
+
+try:
+    from automarket_utils.drive import create_folder_in_drive_folder
+except ImportError:
+    def create_folder_in_drive_folder(drive, folder_name, parent_folder_id):
+        """Fallback for older automarket_utils versions without folder creation."""
+        folder_metadata = {
+            "title": folder_name,
+            "mimeType": "application/vnd.google-apps.folder",
+            "parents": [{"id": parent_folder_id}],
+        }
+        folder = drive.CreateFile(folder_metadata)
+        folder.Upload()
+        print("Created folder ID:", folder["id"])
+        return folder["id"]
+
 try:
     from PipelinesConsumo.src.crm_config import (
+        CRM_RAW_LATEST_FOLDER_ID,
         CRM_RAW_SNAPSHOT_FOLDER_ID,
         CRM_SOURCE_FILES,
         CRM_SOURCE_FOLDER_ID,
@@ -20,6 +37,7 @@ try:
     from PipelinesConsumo.src.constants import mexico_tz
 except ModuleNotFoundError:
     from src.crm_config import (
+        CRM_RAW_LATEST_FOLDER_ID,
         CRM_RAW_SNAPSHOT_FOLDER_ID,
         CRM_SOURCE_FILES,
         CRM_SOURCE_FOLDER_ID,
@@ -34,6 +52,7 @@ class RawCrmAtlas:
         self,
         source_folder_id=CRM_SOURCE_FOLDER_ID,
         raw_snapshot_folder_id=CRM_RAW_SNAPSHOT_FOLDER_ID,
+        latest_snapshot_folder_id=CRM_RAW_LATEST_FOLDER_ID,
         local_dir=".",
         source_files=None,
     ):
@@ -46,6 +65,8 @@ class RawCrmAtlas:
             Drive folder where the temporary Salesforce exports are uploaded.
         raw_snapshot_folder_id : str
             Parent Drive folder where dated raw snapshot folders are created.
+        latest_snapshot_folder_id : str
+            Drive folder where stable latest raw CSVs are overwritten/upserted.
         local_dir : str
             Local directory used to download the Salesforce Excel files before
             reading or snapshotting them.
@@ -54,6 +75,7 @@ class RawCrmAtlas:
         """
         self.source_folder_id = source_folder_id
         self.raw_snapshot_folder_id = raw_snapshot_folder_id
+        self.latest_snapshot_folder_id = latest_snapshot_folder_id
         self.local_dir = local_dir
         self.source_files = source_files or CRM_SOURCE_FILES
         self.timestamp = datetime.now(
@@ -112,6 +134,22 @@ class RawCrmAtlas:
     def list_source_files(self, drive):
         """Return a {Drive title: Drive file id} map for the CRM source folder."""
         return list_file_ids_for_drive_folder(drive, self.source_folder_id)
+
+    @staticmethod
+    def _upsert_latest_csv(drive, folder_id, df, filename):
+        """
+        Overwrite a stable latest CSV in Drive, creating it if it does not exist.
+
+        The historical snapshot path always creates timestamped files. The latest
+        path keeps one predictable filename per table for users or pipelines that
+        only need the most recent raw picture.
+        """
+        file_id_dict = list_file_ids_for_drive_folder(drive, folder_id)
+        if filename in file_id_dict:
+            file_id = file_id_dict[filename]
+            write_csv_to_drive(drive, file_id, df)
+            return file_id
+        return create_csv_file_in_drive_folder(drive, folder_id, df, filename)
 
     def download_sources(self, drive, report_keys=None, logger=None):
         """
@@ -244,6 +282,7 @@ class RawCrmAtlas:
         drive,
         downloaded_sources,
         raw_snapshot_folder_id=None,
+        latest_snapshot_folder_id=None,
         report_keys=None,
         timestamp=None,
         write_manifest=True,
@@ -260,7 +299,8 @@ class RawCrmAtlas:
         1. Create a child folder inside raw_snapshot_folder_id using the run date.
         2. Re-read each downloaded Excel file exactly as raw input.
         3. Upload each raw table as a CSV into the child folder.
-        4. Upload a manifest CSV with source IDs, snapshot IDs, row counts, and
+        4. Upsert a stable latest CSV in latest_snapshot_folder_id when provided.
+        5. Upload a manifest CSV with source IDs, snapshot IDs, row counts, and
            the child folder ID.
 
         Returns
@@ -270,6 +310,7 @@ class RawCrmAtlas:
             CRM table, plus _folder and _folder_name for the dated child folder.
         """
         parent_folder_id = raw_snapshot_folder_id or self.raw_snapshot_folder_id
+        latest_folder_id = latest_snapshot_folder_id or self.latest_snapshot_folder_id
         if not parent_folder_id:
             raise ValueError(
                 "raw_snapshot_folder_id es requerido para escribir snapshots CRM."
@@ -310,6 +351,7 @@ class RawCrmAtlas:
         snapshot_ids = {
             "_folder": folder_id,
             "_folder_name": run_folder_name,
+            "_latest": {},
         }
 
         for table_name in self._resolve_report_keys(report_keys):
@@ -336,6 +378,43 @@ class RawCrmAtlas:
                 )
 
                 snapshot_ids[table_name] = snapshot_id
+                latest_filename = f"{cfg['raw_snapshot_name']}.csv"
+                latest_id = None
+                if latest_folder_id:
+                    if logger:
+                        logger.info(
+                            "raw.latest_snapshot.start",
+                            table_name=table_name,
+                            latest_snapshot_folder_id=latest_folder_id,
+                            latest_filename=latest_filename,
+                        )
+                    try:
+                        latest_id = self._upsert_latest_csv(
+                            drive,
+                            latest_folder_id,
+                            rawdf,
+                            latest_filename,
+                        )
+                    except Exception as e:
+                        if logger:
+                            logger.error(
+                                "raw.latest_snapshot.failed",
+                                e,
+                                table_name=table_name,
+                                latest_snapshot_folder_id=latest_folder_id,
+                                latest_filename=latest_filename,
+                            )
+                        raise
+                    snapshot_ids["_latest"][table_name] = latest_id
+                    if logger:
+                        logger.success(
+                            "raw.latest_snapshot.done",
+                            table_name=table_name,
+                            latest_snapshot_folder_id=latest_folder_id,
+                            latest_filename=latest_filename,
+                            latest_id=latest_id,
+                        )
+
                 manifest_rows.append(
                     {
                         "table_name": table_name,
@@ -346,6 +425,9 @@ class RawCrmAtlas:
                         "snapshot_id": snapshot_id,
                         "snapshot_folder_name": run_folder_name,
                         "snapshot_folder_id": folder_id,
+                        "latest_filename": latest_filename,
+                        "latest_id": latest_id,
+                        "latest_folder_id": latest_folder_id,
                         "snapshot_timestamp": timestamp,
                         "rows": len(rawdf),
                         "columns": len(rawdf.columns),
@@ -374,6 +456,7 @@ class RawCrmAtlas:
 
         if write_manifest:
             manifest_filename = f"{timestamp}_RawCrmManifest.csv"
+            latest_manifest_filename = "RawCrmManifest.csv"
             if logger:
                 logger.info(
                     "raw.manifest.start",
@@ -397,6 +480,37 @@ class RawCrmAtlas:
                     )
                 raise
             snapshot_ids["_manifest"] = manifest_id
+            if latest_folder_id:
+                if logger:
+                    logger.info(
+                        "raw.latest_manifest.start",
+                        latest_snapshot_folder_id=latest_folder_id,
+                        latest_manifest_filename=latest_manifest_filename,
+                    )
+                try:
+                    latest_manifest_id = self._upsert_latest_csv(
+                        drive,
+                        latest_folder_id,
+                        manifest,
+                        latest_manifest_filename,
+                    )
+                except Exception as e:
+                    if logger:
+                        logger.error(
+                            "raw.latest_manifest.failed",
+                            e,
+                            latest_manifest_filename=latest_manifest_filename,
+                            latest_snapshot_folder_id=latest_folder_id,
+                        )
+                    raise
+                snapshot_ids["_latest"]["_manifest"] = latest_manifest_id
+                if logger:
+                    logger.success(
+                        "raw.latest_manifest.done",
+                        latest_snapshot_folder_id=latest_folder_id,
+                        latest_manifest_filename=latest_manifest_filename,
+                        latest_manifest_id=latest_manifest_id,
+                    )
             if logger:
                 logger.success(
                     "raw.manifest.done",

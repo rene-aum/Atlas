@@ -10,6 +10,10 @@ CRM_SOURCE_FOLDER_ID = "17jg82rYHkuGf2Vbx_HIvEWNjQuRZvulv"
 # Set this from the notebook or constants once the traceability folder exists.
 CRM_RAW_SNAPSHOT_FOLDER_ID = "1m5LMB1ushE6VzhbuRNBJV9OE6TSDbcBm"
 
+# Optional folder for the "latest" raw CRM snapshot. Files here keep stable
+# names like RawCrmPedidos.csv and are overwritten/upserted on each run.
+CRM_RAW_LATEST_FOLDER_ID = "1GIjtJ52Epb_aYXGoCE-QFXTnEreptQiE"
+
 # Optional folder for timestamped TXT execution logs. If None, the pipeline
 # functions can receive log_folder_id explicitly from the notebook.
 CRM_LOG_FOLDER_ID = "1N3cUWCQ1B8CmaY8loaaGl81NOWjpboTD"
@@ -138,7 +142,7 @@ CRM_RENAME_DICTS = {
         "MX_ATN_Account__c": "asesor_id",
         "MX_ATN_Account__r.Name": "asesor",
         "MX_ATN_Account__r.MX_ATN_CommerceId__c": "id_am_comprador",
-        "MX_ATN_Tipo_Solicitud__c": "tipo_solicitud",
+        # "MX_ATN_Tipo_Solicitud__c": "tipo_solicitud", 
         "OwnerId": "owner_id",
         "Owner.Name": "owner_name",
         "CreatedDate": "created_date",

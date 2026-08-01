@@ -10,6 +10,7 @@ try:
         CRM_CONSUMO_OUTPUT_IDS,
         CRM_CONSUMO_SHEET_NAMES,
         CRM_LOG_FOLDER_ID,
+        CRM_RAW_LATEST_FOLDER_ID,
         CRM_RAW_SNAPSHOT_FOLDER_ID,
         CRM_SOURCE_FOLDER_ID,
     )
@@ -22,6 +23,7 @@ except ModuleNotFoundError:
         CRM_CONSUMO_OUTPUT_IDS,
         CRM_CONSUMO_SHEET_NAMES,
         CRM_LOG_FOLDER_ID,
+        CRM_RAW_LATEST_FOLDER_ID,
         CRM_RAW_SNAPSHOT_FOLDER_ID,
         CRM_SOURCE_FOLDER_ID,
     )
@@ -56,6 +58,7 @@ def run_crm_raw_snapshot(
     drive,
     source_folder_id=CRM_SOURCE_FOLDER_ID,
     raw_snapshot_folder_id=CRM_RAW_SNAPSHOT_FOLDER_ID,
+    latest_snapshot_folder_id=CRM_RAW_LATEST_FOLDER_ID,
     local_dir=".",
     report_keys=None,
     write_manifest=True,
@@ -68,7 +71,8 @@ def run_crm_raw_snapshot(
     This is the raw stage of the CRM pipeline. It copies the current overwritten
     Salesforce exports from the source Drive folder into the runtime, then writes
     timestamped CSV snapshots into a dated child folder under
-    raw_snapshot_folder_id.
+    raw_snapshot_folder_id. If latest_snapshot_folder_id is provided, it also
+    upserts stable latest CSVs there, without timestamps in the filenames.
 
     A TXT log is uploaded in finally, so the log is still attempted if download
     or snapshot creation fails.
@@ -85,12 +89,14 @@ def run_crm_raw_snapshot(
         timestamp,
         source_folder_id=source_folder_id,
         raw_snapshot_folder_id=raw_snapshot_folder_id,
+        latest_snapshot_folder_id=latest_snapshot_folder_id,
         local_dir=local_dir,
         report_keys=report_keys,
     )
     raw = RawCrmAtlas(
         source_folder_id=source_folder_id,
         raw_snapshot_folder_id=raw_snapshot_folder_id,
+        latest_snapshot_folder_id=latest_snapshot_folder_id,
         local_dir=local_dir,
     )
     raw.timestamp = timestamp
@@ -113,6 +119,7 @@ def run_crm_raw_snapshot(
                 drive,
                 downloaded_sources,
                 raw_snapshot_folder_id=raw_snapshot_folder_id,
+                latest_snapshot_folder_id=latest_snapshot_folder_id,
                 report_keys=report_keys,
                 timestamp=timestamp,
                 write_manifest=write_manifest,
@@ -127,7 +134,8 @@ def run_crm_raw_snapshot(
 
         logger.finish(
             downloaded_tables=len(downloaded_sources),
-            snapshot_files=len(snapshot_ids),
+            snapshot_files=len([k for k in snapshot_ids.keys() if not k.startswith("_")]),
+            latest_files=len(snapshot_ids.get("_latest", {})),
         )
     except Exception as e:
         logger.error("raw.stage.failed", e)
@@ -369,6 +377,7 @@ def run_crm_pipeline(
     gc,
     source_folder_id=CRM_SOURCE_FOLDER_ID,
     raw_snapshot_folder_id=CRM_RAW_SNAPSHOT_FOLDER_ID,
+    latest_snapshot_folder_id=CRM_RAW_LATEST_FOLDER_ID,
     consumo_output_ids=None,
     sheet_names=None,
     output_keys=None,
@@ -381,8 +390,9 @@ def run_crm_pipeline(
     Notebook-friendly CRM pipeline:
     1. download overwritten Salesforce exports
     2. write raw snapshots for traceability
-    3. process CRM consumption outputs
-    4. optionally write selected outputs to Atlas Consumo
+    3. optionally upsert latest raw snapshots with stable filenames
+    4. process CRM consumption outputs
+    5. optionally write selected outputs to Atlas Consumo
 
     This is the single function most notebooks should call. Use write_outputs=False
     for dry runs that build and preview outputs without overwriting Sheets.
@@ -397,6 +407,7 @@ def run_crm_pipeline(
         drive=drive,
         source_folder_id=source_folder_id,
         raw_snapshot_folder_id=raw_snapshot_folder_id,
+        latest_snapshot_folder_id=latest_snapshot_folder_id,
         local_dir=local_dir,
         timestamp=timestamp,
         log_folder_id=log_folder_id,
