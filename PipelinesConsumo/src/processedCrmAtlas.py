@@ -260,7 +260,7 @@ class ProcessedCrmAtlas:
                 documentacion=lambda x: self._normalize_series(x.documentacion),
                 tipo_credito=lambda x: self._normalize_series(x.tipo_credito),
                 proveedor_credito=lambda x: self._normalize_series(x.proveedor_credito),
-                tipo_solicitud=lambda x: self._normalize_series(x.tipo_solicitud),
+                # tipo_solicitud=lambda x: self._normalize_series(x.tipo_solicitud),
                 tipo_inicio_flujo_credito=lambda x: self._normalize_series(
                     x.tipo_inicio_flujo_credito
                 ),
