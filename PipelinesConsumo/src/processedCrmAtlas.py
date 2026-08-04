@@ -149,8 +149,7 @@ class ProcessedCrmAtlas:
                 opportunity_created_date=lambda x: self._to_datetime_str(
                     x.opportunity_created_date,
                     fmt="%Y-%m-%d %H:%M:%S",
-                    utc=True,
-                    tz=mexico_tz,
+                    
                 ),
                 last_modified_date=lambda x: self._to_datetime_str(
                     x.last_modified_date
@@ -265,6 +264,7 @@ class ProcessedCrmAtlas:
                 tipo_inicio_flujo_credito=lambda x: self._normalize_series(
                     x.tipo_inicio_flujo_credito
                 ),
+                tipo_conclusion_flujo_credito =lambda x: self._normalize_series(x.tipo_conclusion_flujo_credito),
                 motivo_cierre_credito=lambda x: self._normalize_series(
                     x.motivo_cierre_credito
                 ),
@@ -395,8 +395,8 @@ class ProcessedCrmAtlas:
             solicitudes_credito
             .sort_values(by=["opportunity_id", "created_date"], ascending=[True, True])
             .drop_duplicates(subset="opportunity_id", keep="first")
-            [lambda x: x.folio.notna()]
-            .assign(opportunity_source_aux="credito am api")
+            [lambda x: x.tipo_conclusion_flujo_credito=='flujo contingente']
+            .assign(opportunity_source_aux="credito am contingencia")
             [["opportunity_id", "opportunity_source_aux"]]
         )
 
@@ -492,7 +492,7 @@ class ProcessedCrmAtlas:
                 opportunity_source_aux=lambda x: np.where(
                     x.opportunity_source.eq("credito am")
                     & x.opportunity_source_aux.isna(),
-                    "credito am contingencia",
+                    "credito am api",
                     x.opportunity_source_aux,
                 ),
                 flag_perfilamento_sc=lambda x: x.fecha_asignacion_perfilamiento_sc.notna()
