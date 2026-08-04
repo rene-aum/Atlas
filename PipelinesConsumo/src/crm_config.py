@@ -101,6 +101,7 @@ CRM_RENAME_DICTS = {
         "MX_ATN_Contactado_Credito__c": "cred_contactado",
         "MX_ATN_Perfilamiento_Credito__c": "cred_perfilamiento_credit",
         "MX_ATN_Canal_Respuesta_Credito__c": "cred_canal_respuesta_credito",
+        "StageName":"opportunity_stage",
     },
     "casos": {
         "Id": "case_id",
@@ -245,6 +246,7 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "last_modified_date",
     "opportunity_source",
     "opportunity_source_aux",
+    "opportunity_stage",
     "flag_perfilamento_sc",
     "asesor_sc",
     "perf_bc_score",

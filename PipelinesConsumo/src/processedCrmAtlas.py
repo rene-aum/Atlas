@@ -128,7 +128,7 @@ class ProcessedCrmAtlas:
                     x.opportunity_name.str.split("-").str[-1],
                     format="%Y%m%d",
                     errors="coerce",
-                ).dt.strftime("%Y-%m-%d"),
+                ).dt.strftime("%Y-%m-%d")
             )
         )
         return pedidos
@@ -168,6 +168,7 @@ class ProcessedCrmAtlas:
                 cred_canal_respuesta_credito=lambda x: self._normalize_series(
                     x.cred_canal_respuesta_credito
                 ),
+                opportunity_stage = lambda x: self._normalize_series(x.opportunity_stage)
             )
         )
         return oportunidades
