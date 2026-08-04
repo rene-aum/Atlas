@@ -46,7 +46,7 @@ class ProcessedCrmAtlas:
         return series.apply(cls._normalize_value)
 
     @staticmethod
-    def _to_datetime_str(series, fmt="%Y-%m-%d", utc=False, tz=None):
+    def _to_datetime_str(series,fmt="%d/%m/%Y, %H:%M" ,fmt_string="%Y-%m-%d", utc=False, tz=None):
         """
         Convert a date/datetime Series to formatted strings with safe coercion.
 
@@ -54,12 +54,12 @@ class ProcessedCrmAtlas:
         transform. Use utc=True and tz=mexico_tz for Salesforce UTC timestamps
         that need to be rendered in local Mexico City time.
         """
-        dt = pd.to_datetime(series, errors="coerce", utc=utc)
+        dt = pd.to_datetime(series,format=fmt, errors="coerce", utc=utc)
         if utc and tz:
             dt = dt.dt.tz_convert(tz)
         if utc:
             dt = dt.dt.tz_localize(None)
-        return dt.dt.strftime(fmt)
+        return dt.dt.strftime(fmt_string)
 
     @staticmethod
     def _to_int(series):
@@ -148,7 +148,7 @@ class ProcessedCrmAtlas:
                 opportunity_source=lambda x: self._normalize_series(x.opportunity_source),
                 opportunity_created_date=lambda x: self._to_datetime_str(
                     x.opportunity_created_date,
-                    fmt="%Y-%m-%d %H:%M:%S",
+                    fmt_string="%Y-%m-%d %H:%M",
                     
                 ),
                 last_modified_date=lambda x: self._to_datetime_str(
@@ -209,17 +209,17 @@ class ProcessedCrmAtlas:
                 id_am=lambda x: self._to_int(x.id_am),
                 created_date=lambda x: self._to_datetime_str(
                     x.created_date,
-                    fmt="%Y-%m-%d %H:%M:%S",
+                    fmt_string="%Y-%m-%d %H:%M",
                 ),
                 work_type_name=lambda x: self._normalize_series(x.work_type_name),
                 status=lambda x: self._normalize_series(x.status),
                 sched_start_time=lambda x: self._to_datetime_str(
                     x.sched_start_time,
-                    fmt="%Y-%m-%d %H:%M:%S",
+                    fmt_string="%Y-%m-%d %H:%M",
                 ),
                 sched_end_time=lambda x: self._to_datetime_str(
                     x.sched_end_time,
-                    fmt="%Y-%m-%d %H:%M:%S",
+                    fmt_string="%Y-%m-%d %H:%M",
                 ),
             )
         )
@@ -241,17 +241,17 @@ class ProcessedCrmAtlas:
                 sku=lambda x: self._to_int(x.sku),
                 created_date=lambda x: self._to_datetime_str(
                     x.created_date,
-                    fmt="%Y-%m-%d %H:%M:%S",
+                    fmt_string="%Y-%m-%d %H:%M",
                 ),
                 fecha_oferta=lambda x: self._to_datetime_str(x.fecha_oferta),
                 fecha_ingreso_solicitud=lambda x: self._to_datetime_str(
                     x.fecha_ingreso_solicitud
                 ),
-                fecha_vigencia=lambda x: self._to_datetime_str(x.fecha_vigencia),
-                fecha_dictamen=lambda x: self._to_datetime_str(x.fecha_dictamen),
-                fecha_cierre_credito=lambda x: self._to_datetime_str(
-                    x.fecha_cierre_credito
-                ),
+                # fecha_vigencia=lambda x: self._to_datetime_str(x.fecha_vigencia),
+                # fecha_dictamen=lambda x: self._to_datetime_str(x.fecha_dictamen),
+                # fecha_cierre_credito=lambda x: self._to_datetime_str(
+                #     x.fecha_cierre_credito
+                # ),
                 status_solicitud=lambda x: self._normalize_series(x.status_solicitud),
                 tipo_conclusion_flujo_credito=lambda x: self._normalize_series(
                     x.tipo_conclusion_flujo_credito
@@ -283,7 +283,7 @@ class ProcessedCrmAtlas:
             .assign(
                 created_date=lambda x: self._to_datetime_str(
                     x.created_date,
-                    fmt="%Y-%m-%d %H:%M:%S",
+                    fmt="%Y-%m-%d %H:%M",
                 ),
                 field_clean=lambda x: self._normalize_series(x.field),
                 old_value_clean=lambda x: self._normalize_series(x.old_value),
