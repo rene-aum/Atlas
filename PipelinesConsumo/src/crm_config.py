@@ -22,12 +22,12 @@ CRM_SHEET_NAME = "Sheet1"
 
 CRM_SOURCE_FILES = {
     "pedidos": {
-        "source_file": "Pedidos_2.xlsx",
+        "source_file": "Pedidos, productos y oportunidad2.xlsx",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmPedidos",
     },
     "oportunidades": {
-        "source_file": "Oportunidades_2.xlsx",
+        "source_file": "Oportunidades2.xlsx",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmOportunidades",
     },
@@ -37,22 +37,22 @@ CRM_SOURCE_FILES = {
         "raw_snapshot_name": "RawCrmCasos",
     },
     "citas": {
-        "source_file": "Citas_2.xlsx",
+        "source_file": "Reporte de citas2.xlsx",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmCitas",
     },
     "solicitudes_credito": {
-        "source_file": "Creditos_2.xlsx",
+        "source_file": "Solicitudes de credito2.xlsx",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmSolicitudesCredito",
     },
     "historico_casos": {
-        "source_file": "Historico casos_2.xlsx",
+        "source_file": "Historial casos2.xlsx",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmHistoricoCasos",
     },
     "historico_citas": {
-        "source_file": "Historico citas_2.xlsx",
+        "source_file": "Historial citas2.xlsx",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmHistoricoCitas",
     },
@@ -101,6 +101,7 @@ CRM_RENAME_DICTS = {
         "MX_ATN_Contactado_Credito__c": "cred_contactado",
         "MX_ATN_Perfilamiento_Credito__c": "cred_perfilamiento_credit",
         "MX_ATN_Canal_Respuesta_Credito__c": "cred_canal_respuesta_credito",
+        "StageName":"opportunity_stage",
     },
     "casos": {
         "Id": "case_id",
@@ -245,6 +246,7 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "last_modified_date",
     "opportunity_source",
     "opportunity_source_aux",
+    "opportunity_stage",
     "flag_perfilamento_sc",
     "asesor_sc",
     "perf_bc_score",
