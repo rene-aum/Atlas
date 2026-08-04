@@ -264,7 +264,6 @@ class ProcessedCrmAtlas:
                 tipo_inicio_flujo_credito=lambda x: self._normalize_series(
                     x.tipo_inicio_flujo_credito
                 ),
-                tipo_conclusion_flujo_credito =lambda x: self._normalize_series(x.tipo_conclusion_flujo_credito),
                 motivo_cierre_credito=lambda x: self._normalize_series(
                     x.motivo_cierre_credito
                 ),
