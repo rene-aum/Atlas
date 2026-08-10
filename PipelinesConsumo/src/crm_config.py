@@ -136,6 +136,7 @@ CRM_RENAME_DICTS = {
         "MX_ATN_WorkTypeName__c": "work_type_name",
         "Status": "status",
         "MX_ATN_OrderId__r.Opportunity.Name": "opportunity_name",
+        "ServiceTerritory.Name": "territorio_cita"
     },
     "solicitudes_credito": {
         "MX_ATN_Oportunidad__c": "opportunity_id",
