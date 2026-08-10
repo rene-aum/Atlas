@@ -507,7 +507,7 @@ class ProcessedCrmAtlas:
         how="left",
     )
     .merge(asesor_perfilamiento_sc, on="case_id_perfilamiento_sc", how="left")
-    .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_sc_id',right_on='id')
+    .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_sc_id',right_on='id',how='left')
     .rename(columns={'equipo':'equipo_asesor_perfilamiento_sc',
                      })
     .drop(columns=["id"])
@@ -516,7 +516,7 @@ class ProcessedCrmAtlas:
         on="case_id_perfilamiento_credito",
         how="left",
     )
-    .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_credito_id',right_on='id')
+    .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_credito_id',right_on='id',how='left')
     .rename(columns={'equipo':'equipo_asesor_perfilamiento_credito',
                      })
     .drop(columns=["id"])
