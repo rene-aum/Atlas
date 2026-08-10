@@ -56,6 +56,11 @@ CRM_SOURCE_FILES = {
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmHistoricoCitas",
     },
+    "catalogo_asesores": {
+        "source_file": "Catálogo de usuarios3.xlsx",
+        "sheet_name": CRM_SHEET_NAME,
+        "raw_snapshot_name": "RawCrmCatalogoAsesores",
+    }
 }
 
 CRM_RENAME_DICTS = {
@@ -76,6 +81,7 @@ CRM_RENAME_DICTS = {
         "MX_ATN_AssetId__r.MX_ATN_VehiclesId__r.MX_ATN_ChassisNumber__c": "vin",
         "OpportunityId": "opportunity_id",
         "Opportunity.Name": "opportunity_name",
+        "MX_ATN_AssetId__r.MX_ATN_CommerceId__c":"sku"
     },
     "oportunidades": {
         "Id": "opportunity_id",
@@ -188,6 +194,12 @@ CRM_RENAME_DICTS = {
         "NewValue": "new_value",
         "CreatedBy.Name": "created_by",
     },
+    "catalogo_usuarios": {"Id":"id",
+               "Name":"name",
+               "Email":"email",
+               "Department":"equipo",
+               "Division":"division"
+               }
 }
 
 CRM_REQUIRED_COLUMNS = {

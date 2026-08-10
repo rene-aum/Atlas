@@ -283,7 +283,7 @@ class ProcessedCrmAtlas:
             .assign(
                 created_date=lambda x: self._to_datetime_str(
                     x.created_date,
-                    fmt="%Y-%m-%d %H:%M",
+                    fmt_string="%Y-%m-%d %H:%M",
                 ),
                 field_clean=lambda x: self._normalize_series(x.field),
                 old_value_clean=lambda x: self._normalize_series(x.old_value),
