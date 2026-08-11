@@ -220,6 +220,8 @@ CRM_WORK_TYPES_VENDEDOR = [
     "cita final entrega vehiculo",
     "revision mecanica inicial",
     "revision mecanica final",
+    "cita inicial entrega vehiculo",
+    "recogida vehiculo",
 ]
 
 CRM_STATUS_CITA_COMPLETA = ["completa"]
