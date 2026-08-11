@@ -482,6 +482,19 @@ class ProcessedCrmAtlas:
                 fecha_ultimo_pedido=("created_date", "max"),
             )
         )
+        summary_solicitudes = (solicitudes_credito
+                    .assign(flag_contingencia=lambda x: x.tipo_conclusion_flujo_credito.eq('flujo contingente').multiply(1),
+                            flag_folio = lambda x: x.folio.notna().multiply(1),
+                            flag_aceptada = lambda x: (~x.status_solicitud.str.startswith('recha') & x.flag_folio.eq(1)).multiply(1))
+                    .groupby('opportunity_id',as_index = False)
+                    .agg(
+                        n_simulaciones_credito=('simulation_name','nunique'),
+                        n_simulaciones_con_folio=('flag_folio','sum'),
+                        n_simulaciones_preaceptadas = ('flag_aceptada','sum'),
+                        n_simulaciones_contingencia = ('flag_contingencia','sum')
+                        )
+                        
+                    )
 
         reporte = (
             oportunidades
@@ -527,6 +540,7 @@ class ProcessedCrmAtlas:
                              })
             .drop(columns=["id"])
             .merge(summary_pedidos, on="opportunity_id", how="left")
+            .merge(summary_solicitudes, on="opportunity_id", how="left")
             .merge(summary_citas_comprador, on="opportunity_id", how="left")
             .assign(
                 opportunity_source_aux_1=lambda x: np.where(
@@ -551,6 +565,9 @@ class ProcessedCrmAtlas:
             reporte,
             self._dedupe_columns(CRM_REPORTE_OPORTUNIDADES_COLUMNS),
         )
+
+    # def proc_reporte_simulaciones(self,solicitudes_credito):
+    #     return solicitudes_credito
 ####################################################### PIPELINE  ########################################################################
     def _run_logged_processor(self, logger, step, table_name, func, rawdf):
         """
