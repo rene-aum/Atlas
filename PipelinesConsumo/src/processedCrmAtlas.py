@@ -478,65 +478,67 @@ class ProcessedCrmAtlas:
         )
 
         reporte = (
-    oportunidades
-    .merge(catalogo_usuarios[['id','equipo']],left_on = 'owner_id',right_on='id',how='left')
-    .rename(columns={'equipo':'opportunity_owner_equipo',
-                     })
-    .drop(columns=["id"])
-    .merge(origen_credito_aux, on="opportunity_id", how="left")
-    .merge(
-        casos_perfilamiento_sc[
-            [
-                "opportunity_id",
-                "case_id_perfilamiento_sc",
-                "case_status_perfilamiento_sc",
-            ]
-        ],
-        on="opportunity_id",
-        how="left",
-    )
-    .merge(
-        casos_perfilamiento_credito[
-            [
-                "opportunity_id",
-                "case_id_perfilamiento_credito",
-                "case_status_perfilamiento_credito",
-            ]
-        ],
-        on="opportunity_id",
-        how="left",
-    )
-    .merge(asesor_perfilamiento_sc, on="case_id_perfilamiento_sc", how="left")
-    .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_sc_id',right_on='id',how='left')
-    .rename(columns={'equipo':'equipo_asesor_perfilamiento_sc',
-                     })
-    .drop(columns=["id"])
-    .merge(
-        asesor_perfilamiento_credito,
-        on="case_id_perfilamiento_credito",
-        how="left",
-    )
-    .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_credito_id',right_on='id',how='left')
-    .rename(columns={'equipo':'equipo_asesor_perfilamiento_credito',
-                     })
-    .drop(columns=["id"])
-    .merge(summary_pedidos, on="opportunity_id", how="left")
-    .merge(summary_citas_comprador, on="opportunity_id", how="left")
-    .assign(
-        opportunity_source_aux=lambda x: np.where(
-            x.opportunity_source.eq("credito am")
-            & x.opportunity_source_aux.isna(),
-            "credito am api",
-            x.opportunity_source_aux,
-        ),
-        flag_perfilamento_sc=lambda x: x.fecha_asignacion_perfilamiento_sc.notna()
-        * 1,
-        flag_perfilamento_credito=lambda x: (
-            x.fecha_asignacion_perfilamiento_credito.notna()
+            oportunidades
+            .merge(catalogo_usuarios[['id','equipo']],left_on = 'owner_id',right_on='id',how='left')
+            .rename(columns={'equipo':'opportunity_owner_equipo',
+                            })
+            .drop(columns=["id"])
+            .merge(origen_credito_aux, on="opportunity_id", how="left")
+            .merge(
+                casos_perfilamiento_sc[
+                    [
+                        "opportunity_id",
+                        "case_id_perfilamiento_sc",
+                        "case_status_perfilamiento_sc",
+                    ]
+                ],
+                on="opportunity_id",
+                how="left",
+            )
+            .merge(
+                casos_perfilamiento_credito[
+                    [
+                        "opportunity_id",
+                        "case_id_perfilamiento_credito",
+                        "case_status_perfilamiento_credito",
+                    ]
+                ],
+                on="opportunity_id",
+                how="left",
+            )
+            .merge(asesor_perfilamiento_sc, on="case_id_perfilamiento_sc", how="left")
+            .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_sc_id',right_on='id',how='left')
+            .rename(columns={'equipo':'equipo_asesor_perfilamiento_sc',
+                            })
+            .drop(columns=["id"])
+            .merge(
+                asesor_perfilamiento_credito,
+                on="case_id_perfilamiento_credito",
+                how="left",
+            )
+            .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_credito_id',right_on='id',how='left')
+            .rename(columns={'equipo':'equipo_asesor_perfilamiento_credito',
+                            })
+            .drop(columns=["id"])
+            .merge(summary_pedidos, on="opportunity_id", how="left")
+            .merge(summary_citas_comprador, on="opportunity_id", how="left")
+            .assign(
+                opportunity_source_aux_1=lambda x: np.where(
+                    (x.opportunity_source==("credito am"))
+                    & x.opportunity_source_aux.isna(),
+                    "credito am api",
+                    x.opportunity_source_aux,
+                ),
+                opportunity_source_aux=lambda x: np.where(x.opportunity_source==("apartado am"), np.nan, x.opportunity_source_aux_1),
+                flag_perfilamento_sc=lambda x: x.fecha_asignacion_perfilamiento_sc.notna()
+                * 1,
+                flag_perfilamento_credito=lambda x: (
+                    x.fecha_asignacion_perfilamiento_credito.notna()
+                )
+                * 1,
+            )
+            .drop(columns=["opportunity_source_aux_1"])
         )
-        * 1,
-    )
-)
 
         return self._select_existing_columns(
             reporte,
