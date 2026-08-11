@@ -308,7 +308,9 @@ class ProcessedCrmAtlas:
          )
         )
         return catalogo
-
+##############################################################################################################
+################################################ REPORTES ####################################################
+##############################################################################################################
     def proc_reporte_oportunidades(
         self,
         oportunidades,
@@ -333,7 +335,8 @@ class ProcessedCrmAtlas:
         Inputs are already-normalized DataFrames from the proc_* methods above.
         """
         casos_perfilamiento_sc = (
-            casos[lambda x: x.case_subject_clean.eq("perfilamiento contact center")]
+            casos[lambda x: x.case_subject_clean.eq(
+                "perfilamiento contact center")]
             .rename(
                 columns={
                     "case_id": "case_id_perfilamiento_sc",
@@ -353,71 +356,73 @@ class ProcessedCrmAtlas:
         )
 
         asesor_perfilamiento_sc = (
-    historico_casos[
-        lambda x: x.case_id.isin(
-            casos_perfilamiento_sc["case_id_perfilamiento_sc"].dropna().unique()
+            historico_casos[
+                lambda x: x.case_id.isin(
+                    casos_perfilamiento_sc["case_id_perfilamiento_sc"].dropna(
+                    ).unique()
+                )
+            ]
+            [
+                lambda x: x.field_clean.eq("status")
+                & x.old_value_clean.eq("abierto")
+                & x.new_value_clean.eq("in progress")
+            ]
+            .sort_values(by="created_date")
+            .drop_duplicates(subset="case_id", keep="first")
+            .assign(
+                fecha_asignacion_perfilamiento_sc=lambda x: pd.to_datetime(
+                    x.created_date,
+                    errors="coerce",
+                ).dt.strftime("%Y-%m-%d %H:%M:%S"),
+                asesor_perfilamiento_sc=lambda x: x.created_by.str.upper(),
+            )
+            .rename(columns={"case_id": "case_id_perfilamiento_sc",
+                             "created_by_id": "asesor_perfilamiento_sc_id"}
+                    )
+            [["case_id_perfilamiento_sc", "asesor_perfilamiento_sc_id",
+                "asesor_perfilamiento_sc", "fecha_asignacion_perfilamiento_sc"]]
         )
-    ]
-    [
-        lambda x: x.field_clean.eq("status")
-        & x.old_value_clean.eq("abierto")
-        & x.new_value_clean.eq("in progress")
-    ]
-    .sort_values(by="created_date")
-    .drop_duplicates(subset="case_id", keep="first")
-    .assign(
-        fecha_asignacion_perfilamiento_sc=lambda x: pd.to_datetime(
-            x.created_date,
-            errors="coerce",
-        ).dt.strftime("%Y-%m-%d %H:%M:%S"),
-        asesor_perfilamiento_sc=lambda x: x.created_by.str.upper(),
-    )
-    .rename(columns={"case_id": "case_id_perfilamiento_sc",
-                      "created_by_id":"asesor_perfilamiento_sc_id"}
-                     )
-    [["case_id_perfilamiento_sc","asesor_perfilamiento_sc_id","asesor_perfilamiento_sc", "fecha_asignacion_perfilamiento_sc"]]
-)
 
         asesor_perfilamiento_credito = (
-    historico_casos[
-        lambda x: x.case_id.isin(
-            casos_perfilamiento_credito[
-                "case_id_perfilamiento_credito"
-            ].dropna().unique()
+            historico_casos[
+                lambda x: x.case_id.isin(
+                    casos_perfilamiento_credito[
+                        "case_id_perfilamiento_credito"
+                    ].dropna().unique()
+                )
+            ]
+            [
+                lambda x: x.field_clean.eq("status")
+                & x.old_value_clean.eq("abierto")
+                & x.new_value_clean.eq("in progress")
+            ]
+            .sort_values(by="created_date")
+            .drop_duplicates(subset="case_id", keep="first")
+            .assign(
+                fecha_asignacion_perfilamiento_credito=lambda x: pd.to_datetime(
+                    x.created_date,
+                    errors="coerce",
+                ).dt.strftime("%Y-%m-%d %H:%M:%S"),
+                asesor_perfilamiento_credito=lambda x: x.created_by.str.upper(),
+            )
+            .rename(columns={"case_id": "case_id_perfilamiento_credito",
+                             "created_by_id": "asesor_perfilamiento_credito_id"
+                             })
+            [
+                [
+                    "case_id_perfilamiento_credito",
+                    "asesor_perfilamiento_credito",
+                    "asesor_perfilamiento_credito_id",
+                    "fecha_asignacion_perfilamiento_credito",
+                ]
+            ]
         )
-    ]
-    [
-        lambda x: x.field_clean.eq("status")
-        & x.old_value_clean.eq("abierto")
-        & x.new_value_clean.eq("in progress")
-    ]
-    .sort_values(by="created_date")
-    .drop_duplicates(subset="case_id", keep="first")
-    .assign(
-        fecha_asignacion_perfilamiento_credito=lambda x: pd.to_datetime(
-            x.created_date,
-            errors="coerce",
-        ).dt.strftime("%Y-%m-%d %H:%M:%S"),
-        asesor_perfilamiento_credito=lambda x: x.created_by.str.upper(),
-    )
-    .rename(columns={"case_id": "case_id_perfilamiento_credito",
-                     "created_by_id":"asesor_perfilamiento_credito_id"
-                     })
-    [
-        [
-            "case_id_perfilamiento_credito",
-            "asesor_perfilamiento_credito",
-            "asesor_perfilamiento_credito_id",
-            "fecha_asignacion_perfilamiento_credito",
-        ]
-    ]
-)
 
         origen_credito_aux = (
             solicitudes_credito
             .sort_values(by=["opportunity_id", "created_date"], ascending=[True, True])
             .drop_duplicates(subset="opportunity_id", keep="first")
-            [lambda x: x.tipo_conclusion_flujo_credito=='flujo contingente']
+            [lambda x: x.tipo_conclusion_flujo_credito == 'flujo contingente']
             .assign(opportunity_source_aux="credito am contingencia")
             [["opportunity_id", "opportunity_source_aux"]]
         )
@@ -479,9 +484,9 @@ class ProcessedCrmAtlas:
 
         reporte = (
             oportunidades
-            .merge(catalogo_usuarios[['id','equipo']],left_on = 'owner_id',right_on='id',how='left')
-            .rename(columns={'equipo':'opportunity_owner_equipo',
-                            })
+            .merge(catalogo_usuarios[['id', 'equipo']], left_on='owner_id', right_on='id', how='left')
+            .rename(columns={'equipo': 'opportunity_owner_equipo',
+                             })
             .drop(columns=["id"])
             .merge(origen_credito_aux, on="opportunity_id", how="left")
             .merge(
@@ -507,29 +512,30 @@ class ProcessedCrmAtlas:
                 how="left",
             )
             .merge(asesor_perfilamiento_sc, on="case_id_perfilamiento_sc", how="left")
-            .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_sc_id',right_on='id',how='left')
-            .rename(columns={'equipo':'equipo_asesor_perfilamiento_sc',
-                            })
+            .merge(catalogo_usuarios[['id', 'equipo']], left_on='asesor_perfilamiento_sc_id', right_on='id', how='left')
+            .rename(columns={'equipo': 'equipo_asesor_perfilamiento_sc',
+                             })
             .drop(columns=["id"])
             .merge(
                 asesor_perfilamiento_credito,
                 on="case_id_perfilamiento_credito",
                 how="left",
             )
-            .merge(catalogo_usuarios[['id','equipo']],left_on = 'asesor_perfilamiento_credito_id',right_on='id',how='left')
-            .rename(columns={'equipo':'equipo_asesor_perfilamiento_credito',
-                            })
+            .merge(catalogo_usuarios[['id', 'equipo']], left_on='asesor_perfilamiento_credito_id', right_on='id', how='left')
+            .rename(columns={'equipo': 'equipo_asesor_perfilamiento_credito',
+                             })
             .drop(columns=["id"])
             .merge(summary_pedidos, on="opportunity_id", how="left")
             .merge(summary_citas_comprador, on="opportunity_id", how="left")
             .assign(
                 opportunity_source_aux_1=lambda x: np.where(
-                    (x.opportunity_source==("credito am"))
+                    (x.opportunity_source == ("credito am"))
                     & x.opportunity_source_aux.isna(),
                     "credito am api",
                     x.opportunity_source_aux,
                 ),
-                opportunity_source_aux=lambda x: np.where(x.opportunity_source==("apartado am"), np.nan, x.opportunity_source_aux_1),
+                opportunity_source_aux=lambda x: np.where(x.opportunity_source == (
+                    "apartado am"), np.nan, x.opportunity_source_aux_1),
                 flag_perfilamento_sc=lambda x: x.fecha_asignacion_perfilamiento_sc.notna()
                 * 1,
                 flag_perfilamento_credito=lambda x: (
@@ -544,7 +550,7 @@ class ProcessedCrmAtlas:
             reporte,
             self._dedupe_columns(CRM_REPORTE_OPORTUNIDADES_COLUMNS),
         )
-
+####################################################### PIPELINE  ########################################################################
     def _run_logged_processor(self, logger, step, table_name, func, rawdf):
         """
         Execute one proc_* method with consistent log events and error context.
@@ -641,6 +647,13 @@ class ProcessedCrmAtlas:
             raw_dfs["historico_casos"],
         )
 
+        catalogo_usuarios = self._run_logged_processor(
+            logger,
+            "proc_catalogo_usuarios",
+            "catalogo_usuarios",
+            self.proc_catalogo_usuarios,
+            raw_dfs["catalogo_usuarios"])
+
         if logger:
             logger.info("consumo.proc_reporte_oportunidades.start")
         try:
@@ -651,6 +664,7 @@ class ProcessedCrmAtlas:
                 citas=citas,
                 solicitudes_credito=solicitudes_credito,
                 historico_casos=historico_casos,
+                catalogo_usuarios=catalogo_usuarios,
             )
         except Exception as e:
             if logger:
@@ -668,7 +682,9 @@ class ProcessedCrmAtlas:
             "oportunidades": oportunidades,
             "casos": casos,
             "citas": citas,
-            "solicitudes_credito": solicitudes_credito,
+            "catalogo_usuarios": catalogo_usuarios,
             "historico_casos": historico_casos,
+            "solicitudes_credito": solicitudes_credito,
             "reporte_oportunidades": reporte_oportunidades,
+            
         }
