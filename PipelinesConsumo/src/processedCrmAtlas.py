@@ -221,6 +221,7 @@ class ProcessedCrmAtlas:
                     x.sched_end_time,
                     fmt_string="%Y-%m-%d %H:%M",
                 ),
+                territorio_cita=lambda x: self._normalize_series(x.territorio_cita),
             )
         )
         return citas
