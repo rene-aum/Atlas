@@ -147,8 +147,8 @@ CRM_RENAME_DICTS = {
         "MX_ATN_Tipo_Conclusion_Flujo_Credito__c": "tipo_conclusion_flujo_credito",
         "Name": "simulation_name",
         "MX_ATN_Status__c": "status_solicitud",
-        "MX_ATN_Account__c": "asesor_id",
-        "MX_ATN_Account__r.Name": "asesor",
+        "MX_ATN_Account__c": "id_cuenta",
+        "MX_ATN_Account__r.Name": "nombre_cliente",
         "MX_ATN_Account__r.MX_ATN_CommerceId__c": "id_am_comprador",
         # "MX_ATN_Tipo_Solicitud__c": "tipo_solicitud", 
         "OwnerId": "owner_id",
@@ -241,13 +241,50 @@ CRM_CONSUMO_OUTPUT_IDS = {
     # Current draft outputs from ConstruccionReportesCrm.ipynb.
     # Replace these IDs when the final Atlas Consumo files are created.
     "reporte_oportunidades": "108tBedxAlNDLdhmE-sctxkZK37woxLxWuY7blMbNzpM",
-    "solicitudes_credito": "1bS-WZOVBBVR77jLbH5kZTIdlAMWGpcHyxA35zP-8skw",
+    "reporte_simulaciones": "1bS-WZOVBBVR77jLbH5kZTIdlAMWGpcHyxA35zP-8skw",
 }
 
 CRM_CONSUMO_SHEET_NAMES = {
     "reporte_oportunidades": "Hoja 1",
-    "solicitudes_credito": "Hoja 1",
+    "reporte_simulaciones": "Hoja 1",
 }
+
+CRM_REPORTE_SIMULACIONES_COLUMNS= ['opportunity_id',
+    'opportunity_name',
+    'tipo_credito',
+    'proveedor_credito',
+    'folio',
+    'tipo_conclusion_flujo_credito',
+    'simulation_name',
+    'status_solicitud',
+    'asesor',
+    'id_am_comprador',
+    'created_date',
+    'simulation_id',
+    'mensualidades',
+    'folio_cotizacion',
+    'mensualidad',
+    'tasa_interes',
+    'credito_aprobado',
+    'enganche',
+    'seguro_danos',
+    'seguro_vida',
+    'comision_apertura',
+    'fecha_oferta',
+    'tipo_pago_seguro_danos',
+    'tipo_pago_seguro_vida',
+    'ingreso_solicitud',
+    'fecha_ingreso_solicitud',
+    'fecha_vigencia',
+    'fecha_dictamen',
+    'fecha_cierre_credito',
+    'tipo_inicio_flujo_credito',
+    'motivo_cierre_credito',
+    'reactivacion_credito',
+    'comentario',
+    'documentacion',
+    'ajustado',
+    ]
 
 CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "opportunity_id",

@@ -19,6 +19,7 @@ except ModuleNotFoundError:
         CRM_RENAME_DICTS,
         CRM_REQUIRED_COLUMNS,
         CRM_REPORTE_OPORTUNIDADES_COLUMNS,
+        CRM_REPORTE_SIMULACIONES_COLUMNS,
         CRM_STATUS_CITA_COMPLETA,
         CRM_STATUS_PEDIDOS_ABIERTOS,
         CRM_WORK_TYPES_COMPRADOR,
@@ -309,6 +310,8 @@ class ProcessedCrmAtlas:
          )
         )
         return catalogo
+
+    
 ##############################################################################################################
 ################################################ REPORTES ####################################################
 ##############################################################################################################
@@ -566,9 +569,15 @@ class ProcessedCrmAtlas:
             self._dedupe_columns(CRM_REPORTE_OPORTUNIDADES_COLUMNS),
         )
 
-    # def proc_reporte_simulaciones(self,solicitudes_credito):
-    #     return solicitudes_credito
+    def proc_reporte_simulaciones(self,solicitudes_credito):
+        return self._select_existing_columns(
+            solicitudes_credito,
+            self._dedupe_columns(CRM_REPORTE_SIMULACIONES_COLUMNS)
+        )
+    
+##########################################################################################################################################
 ####################################################### PIPELINE  ########################################################################
+
     def _run_logged_processor(self, logger, step, table_name, func, rawdf):
         """
         Execute one proc_* method with consistent log events and error context.
@@ -695,6 +704,23 @@ class ProcessedCrmAtlas:
                 output_columns=len(reporte_oportunidades.columns),
             )
 
+        if logger:
+            logger.info("consumo.proc_reporte_simulaciones.start")
+        try:
+            reporte_simulaciones = self.proc_reporte_simulaciones(
+                solicitudes_credito=solicitudes_credito
+            )
+        except Exception as e:
+            if logger:
+                logger.error("consumo.proc_reporte_simulaciones.failed", e)
+            raise
+        if logger:
+            logger.success(
+                "consumo.proc_reporte_simulaciones.done",
+                output_rows=len(reporte_simulaciones),
+                output_columns=len(reporte_simulaciones.columns),
+            )
+
         return {
             "pedidos": pedidos,
             "oportunidades": oportunidades,
@@ -703,6 +729,7 @@ class ProcessedCrmAtlas:
             "catalogo_usuarios": catalogo_usuarios,
             "historico_casos": historico_casos,
             "solicitudes_credito": solicitudes_credito,
+            "reporte_simulaciones": reporte_simulaciones,
             "reporte_oportunidades": reporte_oportunidades,
             
         }
