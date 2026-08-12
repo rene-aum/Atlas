@@ -636,7 +636,7 @@ class ProcessedCrmAtlas:
             ).drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'opportunity_owner_equipo'})
         
         return self._select_existing_columns(
-            reporte,
+            citas_cons,
             self._dedupe_columns(CRM_REPORTE_CITAS_COLUMNS),
         )
 
