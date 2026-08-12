@@ -339,3 +339,27 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "fecha_ultima_cita_visita_comp",
     "citas_completas"
 ]
+
+CRM_REPORTE_CITAS_COLUMNS = [
+    'numero_cita',
+    'created_date',
+    'rol',
+    'work_type_name',
+    'espacio_cita',
+    'sched_start_time',
+    'sched_end_time',
+    'opportunity_owner',
+    'opportunity_owner_id',
+    'opportunity_owner_equipo',
+    'id_am',
+    'telefono',
+    'perf_intencion_pago',
+    'perf_bc_score',
+    'opportunity_id',
+    'commerce_order_id',
+    'sf_order_id',
+    'nombre',
+    'email',
+    'status',
+    'opportunity_stage'
+]
