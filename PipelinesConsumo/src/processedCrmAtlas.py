@@ -298,6 +298,49 @@ class ProcessedCrmAtlas:
         )
         return historico
 
+    def proc_historico_citas(self, rawdf):
+            """
+            Normalize the Salesforce Historico Citas export.
+    
+            Adds cleaned versions of field, old_value, and new_value so assignment
+            events can be detected reliably despite accents/case differences.
+            """
+            historico = (
+                self._rename(rawdf, "historico_citas")
+                .assign(
+                    created_date=lambda x: self._to_datetime_str(
+                        x.created_date,
+                        fmt_string="%Y-%m-%d %H:%M",
+                    ),
+                    field_clean=lambda x: self._normalize_series(x.field),
+                    old_value_clean=lambda x: self._normalize_series(x.old_value),
+                    new_value_clean=lambda x: self._normalize_series(x.new_value),
+                    created_by = lambda x: self._normalize_series(x.created_by).str.upper()
+                )
+            )
+            return historico
+
+    def proc_historico_oportunidades(self, rawdf):
+        """
+        Normalize the Salesforce Historico Oportunidades export.
+
+        Adds cleaned versions of field, old_value, and new_value so assignment
+        events can be detected reliably despite accents/case differences.
+        """
+        historico = (
+            self._rename(rawdf, "historico_oportunidades")
+            .assign(
+                created_date=lambda x: self._to_datetime_str(
+                    x.created_date,
+                    fmt_string="%Y-%m-%d %H:%M",
+                ),
+                field_clean=lambda x: self._normalize_series(x.field),
+                old_value_clean=lambda x: self._normalize_series(x.old_value),
+                new_value_clean=lambda x: self._normalize_series(x.new_value),
+            )
+        )
+        return historico
+
     def proc_catalogo_usuarios(self,rawdf):
         """
         Normalize the Salesforce Catalogo de Usuarios export.
@@ -572,6 +615,7 @@ class ProcessedCrmAtlas:
             reporte,
             self._dedupe_columns(CRM_REPORTE_OPORTUNIDADES_COLUMNS),
         )
+
     def proc_reporte_citas(
         self,
         citas_proc,
@@ -581,62 +625,73 @@ class ProcessedCrmAtlas:
         cuentas_proc
     ):
         # cuentas
-        cuentas_proc = cuentas_proc.rename(columns = {'MX_ATN_CommerceId__c':'id_am', 'Name':'nombre', 'MX_ATN_PrimaryContact__r.MobilePhone':'telefono', 'MX_ATN_PrimaryContact__r.Email':'email'})
-        cuentas_proc['id_am'] = pd.to_numeric(cuentas_proc['id_am'], errors='coerce').astype('Int64')
-
+        cuentas_proc = cuentas_proc.rename(columns={'MX_ATN_CommerceId__c': 'id_am',
+                                                     'Name': 'nombre',
+                                                     'MX_ATN_PrimaryContact__r.MobilePhone': 'telefono', 
+                                                     'MX_ATN_PrimaryContact__r.Email': 'email'})
+        cuentas_proc['id_am'] = (pd.to_numeric(
+            cuentas_proc['id_am'], errors='coerce').astype('Int64')
+            )
         # pedidos
-        pedidos_proc = pedidos_proc[['commerce_order_id','id_am_vendedor','id_am_comprador','sf_order_id']].rename(columns = {'id_am_vendedor':'id_am_vendedor_aux', 'id_am_comprador':'id_am_comprador_aux'})
-        pedidos_proc['commerce_order_id'] = pd.to_numeric(pedidos_proc['commerce_order_id'], errors='coerce').astype('Int64')
+        pedidos_proc = pedidos_proc[['commerce_order_id', 'id_am_vendedor', 'id_am_comprador', 'sf_order_id']].rename(
+            columns={'id_am_vendedor': 'id_am_vendedor_aux', 'id_am_comprador': 'id_am_comprador_aux'})
+        pedidos_proc['commerce_order_id'] = pd.to_numeric(
+            pedidos_proc['commerce_order_id'], errors='coerce').astype('Int64')
 
         # oportunidades
-        oppss_proc = oppss_proc[['opportunity_id', 'owner_id', 'opportunity_owner', 'perf_bc_score', 'perf_intencion_pago', 'opportunity_stage']]
+        oppss_proc = oppss_proc[['opportunity_id', 'owner_id', 'opportunity_owner',
+                                 'perf_bc_score', 'perf_intencion_pago', 'opportunity_stage']]
 
         # usuarios
         usuarios_proc = usuarios_proc.rename(
-            columns = {'id':'id_usuario', 'name':'nombre_usuario'}
+            columns={'id': 'id_usuario', 'name': 'nombre_usuario'}
         )
-        usuarios_proc = usuarios_proc[['id_usuario','nombre_usuario','equipo']]
+        usuarios_proc = usuarios_proc[[
+            'id_usuario', 'nombre_usuario', 'equipo']]
 
         # generamos reporte consumible de citas
         citas_cons = citas_proc.copy().rename(
-            columns = {'territorio_cita':'espacio_cita'}
-            ).assign(
-                rol = lambda x: np.select(
-                    [x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_COMPRADOR)), x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_VENDEDOR))],
-                    ['comprador', 'vendedor'],
-                    default='')
-            )
+            columns={'territorio_cita': 'espacio_cita'}
+        ).assign(
+            rol=lambda x: np.select(
+                [x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_COMPRADOR)),
+                 x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_VENDEDOR))],
+                ['comprador', 'vendedor'],
+                default='')
+        )
 
         # agregamos atributos del id de la persona referida en la linea de cita
-        citas_cons['id_am'] = pd.to_numeric(citas_cons['id_am'], errors='coerce').astype('Int64')
+        citas_cons['id_am'] = pd.to_numeric(
+            citas_cons['id_am'], errors='coerce').astype('Int64')
         citas_cons = citas_cons.merge(
-            cuentas_proc[['id_am','nombre','email','telefono']], how = 'left', on = 'id_am')
+            cuentas_proc[['id_am', 'nombre', 'email', 'telefono']], how='left', on='id_am')
 
         # agregamos rol comprador o vendedor
-        citas_cons['commerce_order_id'] = pd.to_numeric(citas_cons['commerce_order_id'], errors='coerce').astype('Int64')
+        citas_cons['commerce_order_id'] = pd.to_numeric(
+            citas_cons['commerce_order_id'], errors='coerce').astype('Int64')
         citas_cons = citas_cons.merge(
-            pedidos_proc, how = 'left', on = 'commerce_order_id'
-            ).assign(
-            rol_2 = lambda x: np.select(
+            pedidos_proc, how='left', on='commerce_order_id'
+        ).assign(
+            rol_2=lambda x: np.select(
                 [x['id_am'].eq(x['id_am_vendedor_aux']).fillna(False).to_numpy(dtype=bool),
-                x['id_am'].eq(x['id_am_comprador_aux']).fillna(False).to_numpy(dtype=bool)],
+                 x['id_am'].eq(x['id_am_comprador_aux']).fillna(False).to_numpy(dtype=bool)],
                 ['vendedor',
-                'comprador'],
+                 'comprador'],
                 default='desconocido'
             )
 
-            ).drop(columns = ['id_am_vendedor_aux','id_am_comprador_aux'])
+        ).drop(columns=['id_am_vendedor_aux', 'id_am_comprador_aux'])
 
         # agregamos id y nombre de owner, bc score y perfilamiento de sc y cc a partir del reporte de oportunidades
         citas_cons = citas_cons.merge(
-            oppss_proc, how = 'left', on='opportunity_id'
-            ).rename(columns = {'owner_id':'opportunity_owner_id'})
+            oppss_proc, how='left', on='opportunity_id'
+        ).rename(columns={'owner_id': 'opportunity_owner_id'})
 
         # agregamos equipo del owner a partir del catálogo de usuarios
         citas_cons = citas_cons.merge(
-            usuarios_proc, how = 'left', left_on='opportunity_owner_id', right_on = 'id_usuario'
-            ).drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'opportunity_owner_equipo'})
-        
+            usuarios_proc, how='left', left_on='opportunity_owner_id', right_on='id_usuario'
+        ).drop(columns=['id_usuario', 'nombre_usuario']).rename(columns={'equipo': 'opportunity_owner_equipo'})
+
         return self._select_existing_columns(
             citas_cons,
             self._dedupe_columns(CRM_REPORTE_CITAS_COLUMNS),
@@ -747,6 +802,13 @@ class ProcessedCrmAtlas:
             self.proc_historico_casos,
             raw_dfs["historico_casos"],
         )
+        historico_citas = self._run_logged_processor(
+                    logger,
+                    "proc_historico_citas",
+                    "historico_citas",
+                    self.proc_historico_citas,
+                    raw_dfs["historico_citas"],
+                )
 
         catalogo_usuarios = self._run_logged_processor(
             logger,

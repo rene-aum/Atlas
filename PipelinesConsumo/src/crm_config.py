@@ -56,12 +56,17 @@ CRM_SOURCE_FILES = {
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmHistoricoCitas",
     },
+    "historico_oportunidades": {
+       "source_file": "Historial oportunidades1.xlsx",
+        "sheet_name": CRM_SHEET_NAME,
+        "raw_snapshot_name": "RawCrmHistoricoOportunidades", 
+    },
     "catalogo_asesores": {
         "source_file": "Catálogo de usuarios3.xlsx",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmCatalogoAsesores",
     }
-}
+}     
 
 CRM_RENAME_DICTS = {
     "pedidos": {
@@ -195,6 +200,32 @@ CRM_RENAME_DICTS = {
         "NewValue": "new_value",
         "CreatedBy.Name": "created_by",
     },
+    "historico_citas": {
+            "Id": "id_log",
+            "IsDeleted": "is_deleted",
+            "ServiceAppointmentId": "cita_id",
+            "CreatedById": "created_by_id",
+            "CreatedDate": "created_date",
+            "Field": "field",
+            "DataType": "data_type",
+            "OldValue": "old_value",
+            "NewValue": "new_value",
+            "CreatedBy.Name": "created_by",
+            "ServiceAppointment.AppointmentNumber":"numero_cita"
+        },
+
+    "historico_oportunidades": {
+                "Id": "id_log",
+                "IsDeleted": "is_deleted",
+                "OpportunityId": "opportunity_id",
+                "CreatedById": "created_by_id",
+                "CreatedDate": "created_date",
+                "Field": "field",
+                "DataType": "data_type",
+                "OldValue": "old_value",
+                "NewValue": "new_value",
+                "CreatedBy.Name": "created_by",
+            },
     "catalogo_usuarios": {"Id":"id",
                "Name":"name",
                "Email":"email",
