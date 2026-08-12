@@ -12,6 +12,7 @@ try:
         CRM_STATUS_CITA_COMPLETA,
         CRM_STATUS_PEDIDOS_ABIERTOS,
         CRM_WORK_TYPES_COMPRADOR,
+        CRM_WORK_TYPES_VENDEDOR,
     )
     from PipelinesConsumo.src.constants import mexico_tz
 except ModuleNotFoundError:
@@ -23,6 +24,7 @@ except ModuleNotFoundError:
         CRM_STATUS_CITA_COMPLETA,
         CRM_STATUS_PEDIDOS_ABIERTOS,
         CRM_WORK_TYPES_COMPRADOR,
+        CRM_WORK_TYPES_VENDEDOR,
     )
     from src.constants import mexico_tz
 
