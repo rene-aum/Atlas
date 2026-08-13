@@ -890,8 +890,8 @@ class ProcessedCrmAtlas:
         if logger:
             logger.success(
                 "consumo.proc_reporte_simulaciones.done",
-                output_rows=len(reporte_simulaciones),
-                output_columns=len(reporte_simulaciones.columns),
+                output_rows=len(reporte_historico_oportunidades),
+                output_columns=len(reporte_historico_oportunidades.columns),
             )            
 
         return {
