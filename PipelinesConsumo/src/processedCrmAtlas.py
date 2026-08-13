@@ -703,6 +703,18 @@ class ProcessedCrmAtlas:
             solicitudes_credito,
             self._dedupe_columns(CRM_REPORTE_SIMULACIONES_COLUMNS)
         )
+
+    def proc_reporte_historico_oportunidades(self, historico_oportunidades,oportunidades):
+        """
+        """
+        reporte = (historico_oportunidades
+            [lambda x: x.field_clean=='stagename']
+            .sort_values(by=['opportunity_id','created_date'],ascending=[True,True])
+            .assign(created_by = lambda x: x.created_by.str.upper())
+            [['opportunity_id','old_value_clean','new_value_clean','created_by','created_date']]
+            .merge(oportunidades[['opportunity_id','opportunity_name']],on='opportunity_id',how='left')
+            ) 
+        return reporte
     
 ##########################################################################################################################################
 ####################################################### PIPELINE  ########################################################################
@@ -809,6 +821,13 @@ class ProcessedCrmAtlas:
                     self.proc_historico_citas,
                     raw_dfs["historico_citas"],
                 )
+        historico_oportunidades = self._run_logged_processor(
+                    logger,
+                    "proc_historico_oportunidades",
+                    "historico_oportunidades",
+                    self.proc_historico_oportunidades,
+                    raw_dfs["historico_oportunidades"],
+                )
 
         catalogo_usuarios = self._run_logged_processor(
             logger,
@@ -857,6 +876,24 @@ class ProcessedCrmAtlas:
                 output_columns=len(reporte_simulaciones.columns),
             )
 
+        if logger:
+            logger.info("consumo.proc_reporte_historico_oportunidades.start")
+        try:
+            reporte_historico_oportunidades = self.proc_reporte_historico_oportunidades(
+                historico_oportunidades=historico_oportunidades,
+                oportunidades=oportunidades
+            )
+        except Exception as e:
+            if logger:
+                logger.error("consumo.proc_reporte_historico_oportunidades.failed", e)
+            raise
+        if logger:
+            logger.success(
+                "consumo.proc_reporte_simulaciones.done",
+                output_rows=len(reporte_historico_oportunidades),
+                output_columns=len(reporte_historico_oportunidades.columns),
+            )            
+
         return {
             "pedidos": pedidos,
             "oportunidades": oportunidades,
@@ -865,7 +902,10 @@ class ProcessedCrmAtlas:
             "catalogo_usuarios": catalogo_usuarios,
             "historico_casos": historico_casos,
             "solicitudes_credito": solicitudes_credito,
+            "historico_citas": historico_citas,
+            "historico_oportunidades": historico_oportunidades,
             "reporte_simulaciones": reporte_simulaciones,
             "reporte_oportunidades": reporte_oportunidades,
+            "reporte_historico_oportunidades": reporte_historico_oportunidades,
             
         }
