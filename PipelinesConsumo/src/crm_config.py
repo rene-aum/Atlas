@@ -143,7 +143,8 @@ CRM_RENAME_DICTS = {
         "MX_ATN_OrderId__r.Opportunity.Name": "opportunity_name",
         "ServiceTerritory.Name": "territorio_cita",
         "MX_ATN_Fecha_Checkin__c":"fecha_checkin",
-        "MX_ATN_Fecha_Checkout__c":"fecha_checkout"
+        "MX_ATN_Fecha_Checkout__c":"fecha_checkout",
+        "MX_ATN_RescheduleDate__c":"fecha_reagendamiento"
     },
     "solicitudes_credito": {
         "MX_ATN_Oportunidad__c": "opportunity_id",
@@ -321,6 +322,7 @@ CRM_REPORTE_SIMULACIONES_COLUMNS= ['opportunity_id',
     'comentario',
     'documentacion',
     'ajustado',
+    
     ]
 
 CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
@@ -405,4 +407,5 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'opportunity_stage',
     'check_in',
     'check_out',
+    'fecha_reagendamiento'
 ]

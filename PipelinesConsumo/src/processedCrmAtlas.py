@@ -228,6 +228,8 @@ class ProcessedCrmAtlas:
                     fmt_string="%Y-%m-%d %H:%M",
                 ),
                 territorio_cita=lambda x: self._normalize_series(x.territorio_cita),
+                fecha_reagendamiento = lambda x: self._to_datetime_str(x.fecha_reagendamiento,
+                    fmt_string="%Y-%m-%d %H:%M")
             )
         )
         return citas
@@ -728,7 +730,7 @@ class ProcessedCrmAtlas:
             self._dedupe_columns(CRM_REPORTE_SIMULACIONES_COLUMNS)
         )
 
-    def proc_reporte_historico_oportunidades(self, historico_oportunidades,oportunidades):
+    def proc_reporte_historico_oportunidades(self, historico_oportunidades, oportunidades):
         """
         """
         reporte = (historico_oportunidades
