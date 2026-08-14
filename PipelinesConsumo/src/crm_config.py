@@ -385,6 +385,8 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'espacio_cita',
     'sched_start_time',
     'sched_end_time',
+    'booker_name',
+    'booker_equipo',
     'opportunity_owner',
     'opportunity_owner_id',
     'opportunity_owner_equipo',
@@ -398,5 +400,7 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'nombre',
     'email',
     'status',
-    'opportunity_stage'
+    'opportunity_stage',
+    'check_in',
+    'check_out',
 ]
