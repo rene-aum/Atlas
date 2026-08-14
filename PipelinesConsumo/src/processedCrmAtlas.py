@@ -10,6 +10,7 @@ try:
         CRM_REQUIRED_COLUMNS,
         CRM_REPORTE_OPORTUNIDADES_COLUMNS,
         CRM_REPORTE_CITAS_COLUMNS,
+        CRM_REPORTE_SIMULACIONES_COLUMNS,
         CRM_STATUS_CITA_COMPLETA,
         CRM_STATUS_PEDIDOS_ABIERTOS,
         CRM_WORK_TYPES_COMPRADOR,
@@ -503,7 +504,7 @@ class ProcessedCrmAtlas:
 
         summary_citas_comprador = (
             citas_comprador
-            [lambda x:x.status_cita.isin(["programado","completa","en progreso"])]
+            # [lambda x:x.status_cita.isin(["programado","completa","en progreso"])]
             .groupby("opportunity_id", as_index=False)
             .agg(
                 numero_citas_comprador=("fecha_agendada", "nunique"),
