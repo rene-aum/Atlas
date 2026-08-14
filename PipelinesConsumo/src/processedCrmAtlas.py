@@ -633,16 +633,14 @@ class ProcessedCrmAtlas:
         oppss_proc,
         pedidos_proc,
         usuarios_proc,
-        cuentas_proc
+        acclientes,
+        hcitas_proc
     ):
         # cuentas
-        cuentas_proc = cuentas_proc.rename(columns={'MX_ATN_CommerceId__c': 'id_am',
-                                                     'Name': 'nombre',
-                                                     'MX_ATN_PrimaryContact__r.MobilePhone': 'telefono', 
-                                                     'MX_ATN_PrimaryContact__r.Email': 'email'})
-        cuentas_proc['id_am'] = (pd.to_numeric(
-            cuentas_proc['id_am'], errors='coerce').astype('Int64')
-            )
+        acclientes = acclientes.rename(columns={'nickname': 'nombre',
+                                                     'phone': 'telefono'})
+        acclientes['id_am'] = (pd.to_numeric(acclientes['id_am'], errors='coerce').astype('Int64'))
+
         # pedidos
         pedidos_proc = pedidos_proc[['commerce_order_id', 'id_am_vendedor', 'id_am_comprador', 'sf_order_id']].rename(
             columns={'id_am_vendedor': 'id_am_vendedor_aux', 'id_am_comprador': 'id_am_comprador_aux'})
@@ -660,9 +658,20 @@ class ProcessedCrmAtlas:
         usuarios_proc = usuarios_proc[[
             'id_usuario', 'nombre_usuario', 'equipo']]
 
+        # historico de citas
+        hcitas_proc = (hcitas_proc[lambda x: x['field']=='Status'][lambda x: x['old_value'].isna()][lambda x: x['new_value']=='Scheduled'].
+            rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
+                    .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
+                    .drop_duplicates(subset = ['numero_cita'], keep = 'first')
+                    .reset_index(drop=True)
+                    [['numero_cita', 'booker_id', 'booker_name']]
+        )
+
         # generamos reporte consumible de citas
         citas_cons = citas_proc.copy().rename(
-            columns={'territorio_cita': 'espacio_cita'}
+            columns={'territorio_cita': 'espacio_cita',
+            'MX_ATN_Fecha_Checkin__c':'check_in',
+            'MX_ATN_Fecha_Checkout__c':'check_out'}
         ).assign(
             rol=lambda x: np.select(
                 [x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_COMPRADOR)),
@@ -672,14 +681,12 @@ class ProcessedCrmAtlas:
         )
 
         # agregamos atributos del id de la persona referida en la linea de cita
-        citas_cons['id_am'] = pd.to_numeric(
-            citas_cons['id_am'], errors='coerce').astype('Int64')
+        citas_cons['id_am'] = pd.to_numeric(citas_cons['id_am'], errors='coerce').astype('Int64')
         citas_cons = citas_cons.merge(
-            cuentas_proc[['id_am', 'nombre', 'email', 'telefono']], how='left', on='id_am')
+            acclientes[['id_am', 'nombre', 'email', 'telefono']], how='left', on='id_am')
 
         # agregamos rol comprador o vendedor
-        citas_cons['commerce_order_id'] = pd.to_numeric(
-            citas_cons['commerce_order_id'], errors='coerce').astype('Int64')
+        citas_cons['commerce_order_id'] = pd.to_numeric(citas_cons['commerce_order_id'], errors='coerce').astype('Int64')
         citas_cons = citas_cons.merge(
             pedidos_proc, how='left', on='commerce_order_id'
         ).assign(
@@ -698,10 +705,16 @@ class ProcessedCrmAtlas:
             oppss_proc, how='left', on='opportunity_id'
         ).rename(columns={'owner_id': 'opportunity_owner_id'})
 
-        # agregamos equipo del owner a partir del catálogo de usuarios
-        citas_cons = citas_cons.merge(
-            usuarios_proc, how='left', left_on='opportunity_owner_id', right_on='id_usuario'
-        ).drop(columns=['id_usuario', 'nombre_usuario']).rename(columns={'equipo': 'opportunity_owner_equipo'})
+        # agregamos booker y booker id
+        citas_cons = (citas_cons
+                    .merge(hcitas_proc, how = 'left', on = 'numero_cita'))
+
+        # agregamos equipo del owner y del booker a partir del catálogo de usuarios
+        citas_cons = (citas_cons
+                    .merge(usuarios_proc, how = 'left', left_on='opportunity_owner_id', right_on = 'id_usuario')
+                    .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'opportunity_owner_equipo'})
+                    .merge(usuarios_proc, how = 'left', left_on = 'booker_id', right_on = 'id_usuario')
+                    .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'booker_equipo'}))
 
         return self._select_existing_columns(
             citas_cons,
