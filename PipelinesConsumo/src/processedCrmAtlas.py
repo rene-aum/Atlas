@@ -503,7 +503,7 @@ class ProcessedCrmAtlas:
 
         summary_citas_comprador = (
             citas_comprador
-            [lambda x:x.status.isin(["programado","completa","en progreso"])]
+            [lambda x:x.status_cita.isin(["programado","completa","en progreso"])]
             .groupby("opportunity_id", as_index=False)
             .agg(
                 numero_citas_comprador=("fecha_agendada", "nunique"),
