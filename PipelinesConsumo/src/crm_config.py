@@ -372,7 +372,9 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "numero_citas_comprador",
     "fecha_primera_cita_visita_comp",
     "fecha_ultima_cita_visita_comp",
-    "citas_completas"
+    "citas_completas",
+    "stage_antes_de_cierre",
+    "usuario_que_cerro"
 ]
 
 CRM_REPORTE_CITAS_COLUMNS = [
