@@ -273,11 +273,15 @@ CRM_CONSUMO_OUTPUT_IDS = {
     # Replace these IDs when the final Atlas Consumo files are created.
     "reporte_oportunidades": "108tBedxAlNDLdhmE-sctxkZK37woxLxWuY7blMbNzpM",
     "reporte_simulaciones": "1bS-WZOVBBVR77jLbH5kZTIdlAMWGpcHyxA35zP-8skw",
+    "reporte_historico_oportunidades": "1VXM04_8_t44oybLa0KHvScQidSo-m2wNWYMX48tvrHU",
+    "reporte_citas":"1IPCZpxirJUzVx7rzn54wjCXl6UlOvdySlva8un4Tloc"
 }
 
 CRM_CONSUMO_SHEET_NAMES = {
     "reporte_oportunidades": "Hoja 1",
     "reporte_simulaciones": "Hoja 1",
+    "reporte_historico_oportunidades": "Hoja 1",
+    "reporte_citas":"Hoja 1"
 }
 
 CRM_REPORTE_SIMULACIONES_COLUMNS= ['opportunity_id',
@@ -368,7 +372,9 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "numero_citas_comprador",
     "fecha_primera_cita_visita_comp",
     "fecha_ultima_cita_visita_comp",
-    "citas_completas"
+    "citas_completas",
+    "stage_antes_de_cierre",
+    "usuario_que_cerro"
 ]
 
 CRM_REPORTE_CITAS_COLUMNS = [

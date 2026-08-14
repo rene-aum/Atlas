@@ -370,7 +370,8 @@ class ProcessedCrmAtlas:
         citas,
         solicitudes_credito,
         historico_casos,
-        catalogo_usuarios
+        catalogo_usuarios,
+        historico_oportunidades
     ):
         """
         Build the CRM opportunities consumption report.
@@ -502,6 +503,7 @@ class ProcessedCrmAtlas:
 
         summary_citas_comprador = (
             citas_comprador
+            [lambda x:x.status.isin(["programado","completa","en progreso"])]
             .groupby("opportunity_id", as_index=False)
             .agg(
                 numero_citas_comprador=("fecha_agendada", "nunique"),
@@ -545,7 +547,14 @@ class ProcessedCrmAtlas:
                         )
                         
                     )
-
+        historico_oportunidades_mod = (historico_oportunidades
+                                .sort_values(by=['opportunity_id','created_date'],ascending=[False,False])
+                                [lambda x: x.new_value_clean=='cerrada (perdida)']
+                                .drop_duplicates('opportunity_id')
+                                .rename(columns={'old_value_clean':'stage_antes_de_cierre',
+                                                'created_by':'usuario_que_cerro'})
+                                [['opportunity_id','stage_antes_de_cierre','usuario_que_cerro']]
+                                )
         reporte = (
             oportunidades
             .merge(catalogo_usuarios[['id', 'equipo']], left_on='owner_id', right_on='id', how='left')
@@ -608,6 +617,7 @@ class ProcessedCrmAtlas:
                 )
                 * 1,
             )
+            .merge(historico_oportunidades_mod, on='opportunity_id', how='left')
             .drop(columns=["opportunity_source_aux_1"])
         )
 
@@ -754,7 +764,7 @@ class ProcessedCrmAtlas:
             )
         return result
 
-    def build_consumo_outputs(self, raw_dfs, logger=None):
+    def build_consumo_outputs(self, raw_dfs,extra_dfs, logger=None):
         """
         Build all CRM consumption/intermediate outputs from raw DataFrames.
 
@@ -836,6 +846,7 @@ class ProcessedCrmAtlas:
             self.proc_catalogo_usuarios,
             raw_dfs["catalogo_usuarios"])
 
+        # cuentas =  
         if logger:
             logger.info("consumo.proc_reporte_oportunidades.start")
         try:
@@ -847,6 +858,7 @@ class ProcessedCrmAtlas:
                 solicitudes_credito=solicitudes_credito,
                 historico_casos=historico_casos,
                 catalogo_usuarios=catalogo_usuarios,
+                historico_oportunidades=historico_oportunidades
             )
         except Exception as e:
             if logger:
@@ -894,6 +906,27 @@ class ProcessedCrmAtlas:
                 output_columns=len(reporte_historico_oportunidades.columns),
             )            
 
+        if logger:
+            logger.info("consumo.proc_reporte_citas.start")
+        try:
+            reporte_citas = self.proc_reporte_citas(
+                citas_proc=citas,
+                oppss_proc=oportunidades,
+                pedidos_proc=pedidos,
+                usuarios_proc=catalogo_usuarios,
+                cuentas_proc=extra_dfs["AcClientes"]
+            )
+        except Exception as e:
+            if logger:
+                logger.error("consumo.proc_reporte_citas.failed", e)
+            raise
+        if logger:
+            logger.success(
+                "consumo.proc_reporte_citas.done",
+                output_rows=len(reporte_citas),
+                output_columns=len(reporte_citas.columns),
+            )            
+
         return {
             "pedidos": pedidos,
             "oportunidades": oportunidades,
@@ -907,5 +940,5 @@ class ProcessedCrmAtlas:
             "reporte_simulaciones": reporte_simulaciones,
             "reporte_oportunidades": reporte_oportunidades,
             "reporte_historico_oportunidades": reporte_historico_oportunidades,
-            
+            "reporte_citas": reporte_citas,
         }
