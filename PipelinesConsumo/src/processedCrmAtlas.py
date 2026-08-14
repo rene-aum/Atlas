@@ -670,8 +670,8 @@ class ProcessedCrmAtlas:
         # generamos reporte consumible de citas
         citas_cons = citas_proc.copy().rename(
             columns={'territorio_cita': 'espacio_cita',
-            'MX_ATN_Fecha_Checkin__c':'check_in',
-            'MX_ATN_Fecha_Checkout__c':'check_out'}
+            'fecha_checkin':'check_in',
+            'fecha_checkout':'check_out'}
         ).assign(
             rol=lambda x: np.select(
                 [x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_COMPRADOR)),
