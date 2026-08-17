@@ -374,7 +374,8 @@ class ProcessedCrmAtlas:
         solicitudes_credito,
         historico_casos,
         catalogo_usuarios,
-        historico_oportunidades
+        historico_oportunidades,
+        historico_citas
     ):
         """
         Build the CRM opportunities consumption report.
@@ -558,6 +559,30 @@ class ProcessedCrmAtlas:
                                                 'created_by':'usuario_que_cerro'})
                                 [['opportunity_id','stage_antes_de_cierre','usuario_que_cerro']]
                                 )
+
+        citas_comprador_aux = (
+            citas_comprador
+            .sort_values(by=['opportunity_id','created_date'],ascending=[False,True])
+            .drop_duplicates(subset=['opportunity_id'],keep='first')
+            [['opportunity_id','numero_cita']]
+            )
+        primer_booker_aux = (historico_citas
+            [lambda x: x.numero_cita.isin(citas_comprador_aux.numero_cita.unique())]
+            [lambda x: x.field_clean=='status']
+            [lambda x: x.old_value.isna() & (x.new_value_clean=='scheduled')]
+            .sort_values(by=['numero_cita','created_date'],ascending=[False,True])
+            .drop_duplicates(subset=['numero_cita'],keep='first')
+            .merge(catalogo_usuarios[['id','equipo']],left_on='created_by_id',right_on='id',how='left')
+            .drop(columns=['id'])
+            .rename(columns={'created_by':'primer_booker_comprador',
+                            'equipo':'equipo_primer_booker_comprador'
+                            })
+            [['numero_cita','primer_booker_comprador','equipo_primer_booker_comprador']]
+            )
+        primer_booker_df = (citas_comprador_aux
+            .merge(primer_booker_aux,on='numero_cita',how='left')
+            .drop(columns=['numero_cita'])
+            )
         reporte = (
             oportunidades
             .merge(catalogo_usuarios[['id', 'equipo']], left_on='owner_id', right_on='id', how='left')
@@ -621,6 +646,7 @@ class ProcessedCrmAtlas:
                 * 1,
             )
             .merge(historico_oportunidades_mod, on='opportunity_id', how='left')
+            .merge(primer_booker_df, on='opportunity_id', how='left')
             .drop(columns=["opportunity_source_aux_1"])
         )
 
@@ -874,7 +900,8 @@ class ProcessedCrmAtlas:
                 solicitudes_credito=solicitudes_credito,
                 historico_casos=historico_casos,
                 catalogo_usuarios=catalogo_usuarios,
-                historico_oportunidades=historico_oportunidades
+                historico_oportunidades=historico_oportunidades,
+                historico_citas=historico_citas
             )
         except Exception as e:
             if logger:
