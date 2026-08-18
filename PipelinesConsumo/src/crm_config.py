@@ -329,6 +329,7 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "opportunity_id",
     "opportunity_name",
     "opportunity_created_date",
+    "opportunity_created_date_day",
     "fecha_asignacion",
     "opportunity_owner",
     "owner_id",
