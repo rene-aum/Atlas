@@ -256,11 +256,7 @@ class ProcessedCrmAtlas:
                 fecha_ingreso_solicitud=lambda x: self._to_datetime_str(
                     x.fecha_ingreso_solicitud
                 ),
-                # fecha_vigencia=lambda x: self._to_datetime_str(x.fecha_vigencia),
-                # fecha_dictamen=lambda x: self._to_datetime_str(x.fecha_dictamen),
-                # fecha_cierre_credito=lambda x: self._to_datetime_str(
-                #     x.fecha_cierre_credito
-                # ),
+                
                 status_solicitud=lambda x: self._normalize_series(x.status_solicitud),
                 tipo_conclusion_flujo_credito=lambda x: self._normalize_series(
                     x.tipo_conclusion_flujo_credito
@@ -269,7 +265,6 @@ class ProcessedCrmAtlas:
                 documentacion=lambda x: self._normalize_series(x.documentacion),
                 tipo_credito=lambda x: self._normalize_series(x.tipo_credito),
                 proveedor_credito=lambda x: self._normalize_series(x.proveedor_credito),
-                # tipo_solicitud=lambda x: self._normalize_series(x.tipo_solicitud),
                 tipo_inicio_flujo_credito=lambda x: self._normalize_series(
                     x.tipo_inicio_flujo_credito
                 ),
@@ -644,6 +639,7 @@ class ProcessedCrmAtlas:
                     x.fecha_asignacion_perfilamiento_credito.notna()
                 )
                 * 1,
+                opportunity_created_date_day = lambda x: pd.to_datetime(x.opportunity_created_date, errors='coerce').dt.strftime('%Y-%m-%d'),
             )
             .merge(historico_oportunidades_mod, on='opportunity_id', how='left')
             .merge(primer_booker_df, on='opportunity_id', how='left')
