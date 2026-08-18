@@ -742,7 +742,8 @@ class ProcessedCrmAtlas:
                     .merge(usuarios_proc, how = 'left', left_on='opportunity_owner_id', right_on = 'id_usuario')
                     .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'opportunity_owner_equipo'})
                     .merge(usuarios_proc, how = 'left', left_on = 'booker_id', right_on = 'id_usuario')
-                    .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'booker_equipo'}))
+                    .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'booker_equipo'})
+                    .sort_values(by='numero_cita', ascending=False))
 
         return self._select_existing_columns(
             citas_cons,
