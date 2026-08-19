@@ -402,6 +402,7 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'perf_intencion_pago',
     'perf_bc_score',
     'opportunity_id',
+    'opportunity_name',
     'commerce_order_id',
     'sf_order_id',
     'nombre',
