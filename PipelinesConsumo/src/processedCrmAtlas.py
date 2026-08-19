@@ -496,13 +496,13 @@ class ProcessedCrmAtlas:
                 fecha_agendada=lambda x: pd.to_datetime(
                     x.sched_start_time,
                     errors="coerce",
-                ).dt.strftime("%Y-%m-%d"),
+                ).dt.strftime("%Y-%m-%d").fillna(''),
             )
         )
 
         summary_citas_comprador = (
             citas_comprador
-            # [lambda x:x.status_cita.isin(["programado","completa","en progreso"])]
+            
             .groupby("opportunity_id", as_index=False)
             .agg(
                 numero_citas_comprador=("fecha_agendada", "nunique"),

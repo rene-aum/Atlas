@@ -4,3 +4,4 @@
 *.pq
 .ipynb_checkpoints/
 *.dbdiagram
+PipelinesConsumo/notebooks/testingColabVsCode.ipynb
