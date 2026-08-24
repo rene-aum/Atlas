@@ -367,9 +367,8 @@ class RawCrmAtlas:
                         local_path=source_info["local_path"],
                         raw_snapshot_folder_id=folder_id,
                     )
-                rawdf = pd.read_excel(
-                    source_info["local_path"],
-                    sheet_name=cfg.get("sheet_name", "Sheet1"),
+                rawdf = pd.read_csv(
+                    source_info["local_path"],encoding=CSV_ENCODING
                 )
                 snapshot_filename = f"{timestamp}_{cfg['raw_snapshot_name']}.csv"
                 snapshot_id = create_csv_file_in_drive_folder(
