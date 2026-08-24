@@ -123,6 +123,8 @@ CRM_RENAME_DICTS = {
         "MX_ATN_Perfilamiento_Credito__c": "cred_perfilamiento_credit",
         "MX_ATN_Canal_Respuesta_Credito__c": "cred_canal_respuesta_credito",
         "StageName":"opportunity_stage",
+        "MX_ATN_Motivo_cierre__c":"motivo_cierre_oportunidad",
+        "MX_ATN_Detalle_Cierre__c":"detalle_motivo_cierre_oportunidad"
     },
     "casos": {
         "Id": "case_id",
