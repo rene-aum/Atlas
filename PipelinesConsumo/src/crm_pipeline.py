@@ -3,12 +3,16 @@ from datetime import datetime
 import pandas as pd
 import pytz
 
-from automarket_utils.drive import update_sheets_in_drive_folder
+from automarket_utils.drive import (
+    read_from_google_sheets,
+    update_sheets_in_drive_folder,
+)
 
 try:
     from PipelinesConsumo.src.crm_config import (
         CRM_CONSUMO_OUTPUT_IDS,
         CRM_CONSUMO_SHEET_NAMES,
+        CRM_EXTERNAL_SHEET_INPUTS,
         CRM_LOG_FOLDER_ID,
         CRM_RAW_LATEST_FOLDER_ID,
         CRM_RAW_SNAPSHOT_FOLDER_ID,
@@ -22,6 +26,7 @@ except ModuleNotFoundError:
     from src.crm_config import (
         CRM_CONSUMO_OUTPUT_IDS,
         CRM_CONSUMO_SHEET_NAMES,
+        CRM_EXTERNAL_SHEET_INPUTS,
         CRM_LOG_FOLDER_ID,
         CRM_RAW_LATEST_FOLDER_ID,
         CRM_RAW_SNAPSHOT_FOLDER_ID,
@@ -52,6 +57,55 @@ def add_run_metadata(df, snapshot_timestamp):
         ),
         snapshot_timestamp=snapshot_timestamp,
     )
+
+
+def read_crm_external_inputs(gc, external_sheet_inputs=None, logger=None):
+    """Read the existing Atlas Consumo tables required by CRM reports.
+
+    These tables have independent upstream pipelines.  Reading them here makes
+    their use by the CRM reports explicit and records their Sheet IDs and shape
+    in the CRM execution log.
+    """
+    external_sheet_inputs = external_sheet_inputs or CRM_EXTERNAL_SHEET_INPUTS
+    external_dfs = {}
+
+    for input_name, config in external_sheet_inputs.items():
+        spreadsheet_id = config["spreadsheet_id"]
+        if logger:
+            logger.info(
+                "consumo.read_external.start",
+                input_name=input_name,
+                spreadsheet_id=spreadsheet_id,
+            )
+        try:
+            df = read_from_google_sheets(gc, spreadsheet_id)
+            required_columns = set(config.get("required_columns", []))
+            missing_columns = required_columns.difference(df.columns)
+            if missing_columns:
+                raise ValueError(
+                    f"{input_name}: faltan columnas requeridas: "
+                    f"{sorted(missing_columns)}"
+                )
+            external_dfs[input_name] = df
+        except Exception as e:
+            if logger:
+                logger.error(
+                    "consumo.read_external.failed",
+                    e,
+                    input_name=input_name,
+                    spreadsheet_id=spreadsheet_id,
+                )
+            raise
+        if logger:
+            logger.success(
+                "consumo.read_external.done",
+                input_name=input_name,
+                spreadsheet_id=spreadsheet_id,
+                rows=len(df),
+                columns=len(df.columns),
+            )
+
+    return external_dfs
 
 
 def run_crm_raw_snapshot(
@@ -159,7 +213,12 @@ def run_crm_raw_snapshot(
     }
 
 
-def build_crm_consumo_outputs(downloaded_sources, report_keys=None, logger=None):
+def build_crm_consumo_outputs(
+    downloaded_sources,
+    external_dfs,
+    report_keys=None,
+    logger=None,
+):
     """
     Read downloaded CRM files and build DataFrames without writing to Drive.
 
@@ -173,7 +232,11 @@ def build_crm_consumo_outputs(downloaded_sources, report_keys=None, logger=None)
         logger=logger,
     )
     processor = ProcessedCrmAtlas()
-    return processor.build_consumo_outputs(raw_dfs, logger=logger)
+    return processor.build_consumo_outputs(
+        raw_dfs,
+        extra_dfs=external_dfs,
+        logger=logger,
+    )
 
 
 def write_crm_consumo_outputs(
@@ -294,6 +357,8 @@ def run_crm_consumo(
     write_outputs=True,
     include_metadata=True,
     log_folder_id=CRM_LOG_FOLDER_ID,
+    external_dfs=None,
+    external_sheet_inputs=None,
 ):
     """
     Build CRM consumo outputs and optionally write them to Google Sheets.
@@ -326,8 +391,14 @@ def run_crm_consumo(
 
     try:
         logger.info("consumo.stage.start")
+        external_dfs = external_dfs or read_crm_external_inputs(
+            gc,
+            external_sheet_inputs=external_sheet_inputs,
+            logger=logger,
+        )
         outputs = build_crm_consumo_outputs(
             downloaded_sources,
+            external_dfs=external_dfs,
             logger=logger,
         )
 
@@ -385,6 +456,8 @@ def run_crm_pipeline(
     write_outputs=True,
     include_metadata=True,
     log_folder_id=CRM_LOG_FOLDER_ID,
+    external_dfs=None,
+    external_sheet_inputs=None,
 ):
     """
     Notebook-friendly CRM pipeline:
@@ -423,6 +496,8 @@ def run_crm_pipeline(
         write_outputs=write_outputs,
         include_metadata=include_metadata,
         log_folder_id=log_folder_id or raw_snapshot_folder_id,
+        external_dfs=external_dfs,
+        external_sheet_inputs=external_sheet_inputs,
     )
 
     return {
