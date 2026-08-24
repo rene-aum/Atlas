@@ -803,7 +803,7 @@ class ProcessedCrmAtlas:
             )
         return result
 
-    def build_consumo_outputs(self, raw_dfs,extra_dfs, logger=None):
+    def build_consumo_outputs(self, raw_dfs, extra_dfs, logger=None):
         """
         Build all CRM consumption/intermediate outputs from raw DataFrames.
 
@@ -812,6 +812,10 @@ class ProcessedCrmAtlas:
         raw_dfs : dict
             Raw DataFrames keyed by CRM table name, typically from
             RawCrmAtlas.read_local_sources.
+        extra_dfs : dict
+            Existing Atlas Consumo DataFrames required to enrich CRM reports.
+            Currently requires ``AcClientes`` for customer details in the
+            appointments report.
         logger : CrmRunLogger, optional
             Captures one log event per table transform and report build.
 
@@ -821,6 +825,19 @@ class ProcessedCrmAtlas:
             Normalized intermediate tables plus final consumption outputs such
             as reporte_oportunidades and solicitudes_credito.
         """
+        if "AcClientes" not in extra_dfs:
+            raise ValueError(
+                "Falta la dependencia externa 'AcClientes' para construir reporte_citas."
+            )
+        missing_client_columns = {
+            "id_am", "nickname", "phone", "email"
+        }.difference(extra_dfs["AcClientes"].columns)
+        if missing_client_columns:
+            raise ValueError(
+                "AcClientes: faltan columnas requeridas: "
+                f"{sorted(missing_client_columns)}"
+            )
+
         pedidos = self._run_logged_processor(
             logger,
             "proc_pedidos",
@@ -954,7 +971,8 @@ class ProcessedCrmAtlas:
                 oppss_proc=oportunidades,
                 pedidos_proc=pedidos,
                 usuarios_proc=catalogo_usuarios,
-                cuentas_proc=extra_dfs["AcClientes"]
+                acclientes=extra_dfs["AcClientes"],
+                hcitas_proc=historico_citas,
             )
         except Exception as e:
             if logger:

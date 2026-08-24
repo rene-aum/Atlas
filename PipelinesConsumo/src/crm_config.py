@@ -17,56 +17,66 @@ CRM_RAW_LATEST_FOLDER_ID = "1GIjtJ52Epb_aYXGoCE-QFXTnEreptQiE"
 # Optional folder for timestamped TXT execution logs. If None, the pipeline
 # functions can receive log_folder_id explicitly from the notebook.
 CRM_LOG_FOLDER_ID = "1N3cUWCQ1B8CmaY8loaaGl81NOWjpboTD"
-
+CSV_ENCODING = 'utf-8'
 CRM_SHEET_NAME = "Sheet1"
+
+# Existing Atlas Consumo tables that enrich CRM reports. They are not temporary
+# Salesforce exports, so they are read as external dependencies rather than
+# copied into the CRM raw-snapshot folder.
+CRM_EXTERNAL_SHEET_INPUTS = {
+    "AcClientes": {
+        "spreadsheet_id": "1Re7omesAjvf8hoQ9n_BTCMBUnM37YOj6VOJTZHs3I6I",
+        "required_columns": ["id_am", "nickname", "phone", "email"],
+    },
+}
 
 CRM_SOURCE_FILES = {
     "pedidos": {
-        "source_file": "Pedidos, productos y oportunidad2.xlsx",
+        "source_file": "pedidos.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmPedidos",
     },
     "oportunidades": {
-        "source_file": "Oportunidades2.xlsx",
+        "source_file": "oportunidades.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmOportunidades",
     },
     "casos": {
-        "source_file": "Casos_2.xlsx",
+        "source_file": "casos.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmCasos",
     },
     "citas": {
-        "source_file": "Reporte de citas2.xlsx",
+        "source_file": "citas.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmCitas",
     },
     "solicitudes_credito": {
-        "source_file": "Solicitudes de credito2.xlsx",
+        "source_file": "solicitudes.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmSolicitudesCredito",
     },
     "historico_casos": {
-        "source_file": "Historial casos2.xlsx",
+        "source_file": "historico_casos.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmHistoricoCasos",
     },
     "historico_citas": {
-        "source_file": "Historial citas2.xlsx",
+        "source_file": "historico_citas.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmHistoricoCitas",
     },
     "historico_oportunidades": {
-       "source_file": "Historial oportunidades1.xlsx",
+       "source_file": "historico_oportunidades.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmHistoricoOportunidades", 
     },
-    "catalogo_asesores": {
-        "source_file": "Catálogo de usuarios3.xlsx",
+    "catalogo_usuarios": {
+        "source_file": "catalogo_usuarios.csv",
         "sheet_name": CRM_SHEET_NAME,
         "raw_snapshot_name": "RawCrmCatalogoAsesores",
     }
-}     
+}
 
 CRM_RENAME_DICTS = {
     "pedidos": {

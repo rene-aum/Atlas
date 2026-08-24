@@ -33,6 +33,7 @@ try:
         CRM_RAW_SNAPSHOT_FOLDER_ID,
         CRM_SOURCE_FILES,
         CRM_SOURCE_FOLDER_ID,
+        CSV_ENCODING
     )
     from PipelinesConsumo.src.constants import mexico_tz
 except ModuleNotFoundError:
@@ -41,6 +42,7 @@ except ModuleNotFoundError:
         CRM_RAW_SNAPSHOT_FOLDER_ID,
         CRM_SOURCE_FILES,
         CRM_SOURCE_FOLDER_ID,
+        CSV_ENCODING,
     )
     from src.constants import mexico_tz
 
@@ -254,9 +256,9 @@ class RawCrmAtlas:
                         local_path=local_path,
                         sheet_name=cfg.get("sheet_name", "Sheet1"),
                     )
-                raw_dfs[table_name] = pd.read_excel(
+                raw_dfs[table_name] = pd.read_csv(
                     local_path,
-                    sheet_name=cfg.get("sheet_name", "Sheet1"),
+                    encoding=CSV_ENCODING,
                 )
                 if logger:
                     logger.success(
