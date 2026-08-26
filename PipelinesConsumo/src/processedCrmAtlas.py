@@ -254,7 +254,7 @@ class ProcessedCrmAtlas:
                 ),
                 fecha_oferta=lambda x: self._to_datetime_str(x.fecha_oferta),
                 fecha_ingreso_solicitud=lambda x: self._to_datetime_str(
-                    x.fecha_ingreso_solicitud
+                    x.fecha_ingreso_solicitud,fmt="%d/%m/%Y"
                 ),
                 
                 status_solicitud=lambda x: self._normalize_series(x.status_solicitud),
