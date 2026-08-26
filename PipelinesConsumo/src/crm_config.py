@@ -129,7 +129,7 @@ CRM_RENAME_DICTS = {
     "casos": {
         "Id": "case_id",
         "Subject": "case_subject",
-        "Owner.Name": "case_owner_name",
+        "Owner.Name": "case_owner_name_oportunidades",
         "OwnerId": "case_owner_id",
         "CaseNumber": "case_number",
         "CreatedDate": "case_created_date",
@@ -356,6 +356,7 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "asesor_perfilamiento_sc",
     "equipo_asesor_perfilamiento_sc",
     "fecha_asignacion_perfilamiento_sc",
+    "case_owner_name_oportunidades",
     "case_id_perfilamiento_sc",
     "case_status_perfilamiento_sc",
     "perf_bc_score",
