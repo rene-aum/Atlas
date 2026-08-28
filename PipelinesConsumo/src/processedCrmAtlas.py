@@ -591,7 +591,7 @@ class ProcessedCrmAtlas:
                         "opportunity_id",
                         "case_id_perfilamiento_sc",
                         "case_status_perfilamiento_sc",
-                        "case_owner_name_oportunidades"
+                        "case_owner_perfilamiento_sc"
                     ]
                 ],
                 on="opportunity_id",
