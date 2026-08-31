@@ -590,15 +590,15 @@ class ProcessedCrmAtlas:
                         "opportunity_id",
                         "case_id_perfilamiento_sc",
                         "case_status_perfilamiento_sc",
-                        "case_owner_perfilamiento_sc",
-                        "case_owner_id",
+                        "case_owner_name_perf_sc",
+                        "case_owner_id_perf_sc",
                     ]
                 ],
                 on="opportunity_id",
                 how="left",
             )
-            .merge(catalogo_usuarios[['id', 'equipo']], left_on='case_owner_id', right_on='id', how='left')
-            .rename(columns={'equipo': 'case_owner_equipo'})
+            .merge(catalogo_usuarios[['id', 'equipo']], left_on='case_owner_id_perf_sc', right_on='id', how='left')
+            .rename(columns={'equipo': 'case_owner_equipo_perf_sc'})
             .drop(columns=["id"])
             .merge(
                 casos_perfilamiento_credito[
@@ -637,9 +637,9 @@ class ProcessedCrmAtlas:
                 ),
                 opportunity_source_aux=lambda x: np.where(x.opportunity_source == (
                     "apartado am"), np.nan, x.opportunity_source_aux_1),
-                flag_perfilamento_sc=lambda x: x.fecha_caso_tomado_sc.notna()
+                flag_caso_tomado_perf_sc=lambda x: x.fecha_caso_tomado_sc.notna()
                 * 1,
-                flag_caso_tomado_perf_sc=lambda x: (
+                flag_perfilamento_credito=lambda x: (
                     x.fecha_asignacion_perfilamiento_credito.notna()
                 )
                 * 1,
