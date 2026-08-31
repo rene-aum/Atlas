@@ -764,12 +764,16 @@ class ProcessedCrmAtlas:
                      )
         print('citas_cons + usuarios_procx2: ',len(citas_cons))
 
-        # quitamos citas dummies
-        citas_cons = (citas_cons
-                    .loc[lambda x: ~(x.opportunity_id.notna() & x.booker_name.isna())]
-                    .sort_values(by='numero_cita', ascending=False)
+        # etiquetamos citas dummies
+        citas_cons = (citas_cons.assign(
+                                    flag_dummy = np.where(
+                                        (x.opportunity_id.notna() & x.booker_name.isna()),
+                                          1,
+                                          0)
+                                    )
+                              .sort_values(by='numero_cita', ascending=False)
                      )
-        print('citas_cons + quitamos citas dummies: ',len(citas_cons))
+        print('citas_cons + etiquetamos citas dummies: ',len(citas_cons))
         
         
         # agregamos etiqueta de show y status previo en historico
