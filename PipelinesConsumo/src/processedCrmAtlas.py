@@ -761,7 +761,7 @@ class ProcessedCrmAtlas:
         # agregamos etiqueta de show y status previo en historico
         citas_cons = (citas_cons
                         .merge(hcitas_proc
-                                .loc[lambda x: x.new_value.isin(CRITERIOS_SHOW_CITAS)]
+                                .loc[lambda x: x.new_value.isin(CRM_CRITERIOS_SHOW_CITAS)]
                                 .assign(kpi_citas_flag_show_compr = 1)
                                 .drop_duplicates(subset=['numero_cita'])
                                 .rename(columns = {'created_date':'kpi_citas_fecha_show_compr','old_value':'status_old_value','new_value':'status_new_value'})
