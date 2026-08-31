@@ -766,7 +766,7 @@ class ProcessedCrmAtlas:
 
         # quitamos citas dummies
         citas_cons = (citas_cons
-                    .loc[lambda x: ~(x.opportunity_owner_id.notna() & x.booker_name.isna())]
+                    .loc[lambda x: ~(x.opportunity_id.notna() & x.booker_name.isna())]
                     .sort_values(by='numero_cita', ascending=False)
                      )
         print('citas_cons + quitamos citas dummies: ',len(citas_cons))
