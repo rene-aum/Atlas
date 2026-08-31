@@ -673,6 +673,7 @@ class ProcessedCrmAtlas:
         acclientes,
         hcitas_proc
     ):
+        print('lineas citas_proc: ',len(citas_proc))
         # cuentas
         acclientes = acclientes.rename(columns={'nickname': 'nombre',
                                                      'phone': 'telefono'})
@@ -720,6 +721,7 @@ class ProcessedCrmAtlas:
         citas_cons['id_am'] = pd.to_numeric(citas_cons['id_am'], errors='coerce').astype('Int64')
         citas_cons = citas_cons.merge(
             acclientes[['id_am', 'nombre', 'email', 'telefono']], how='left', on='id_am')
+        print('citas_cons + acclientes: ',len(citas_cons))
 
         # agregamos rol comprador o vendedor
         citas_cons['commerce_order_id'] = pd.to_numeric(citas_cons['commerce_order_id'], errors='coerce').astype('Int64')
@@ -735,11 +737,13 @@ class ProcessedCrmAtlas:
             )
 
         ).drop(columns=['id_am_vendedor_aux', 'id_am_comprador_aux'])
+        print('citas_cons + pedidos: ',len(citas_cons))
 
         # agregamos id y nombre de owner, bc score y perfilamiento de sc y cc a partir del reporte de oportunidades
         citas_cons = citas_cons.merge(
             oppss_proc, how='left', on='opportunity_id'
         ).rename(columns={'owner_id': 'opportunity_owner_id'})
+        print('citas_cons + opps: ',len(citas_cons))
 
         # agregamos booker y booker id
         citas_cons = (citas_cons
@@ -748,6 +752,7 @@ class ProcessedCrmAtlas:
                                 .loc[lambda x: x['new_value']=='Scheduled'], 
                             how = 'left',
                             on = 'numero_cita'))
+        print('citas_cons + hcitas: ',len(citas_cons))
 
         # agregamos equipo del owner y del booker a partir del catálogo de usuarios
         citas_cons = (citas_cons
@@ -755,8 +760,16 @@ class ProcessedCrmAtlas:
                     .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'opportunity_owner_equipo'})
                     .merge(usuarios_proc, how = 'left', left_on = 'booker_id', right_on = 'id_usuario')
                     .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'booker_equipo'})
+                     )
+        print('citas_cons + usuarios_procx2: ',len(citas_cons))
+
+        # quitamos citas dummies
+        citas_cons = (citas_cons
                     .loc[lambda x: ~(x.opportunity_owner_id.notna() & x.booker_name.isna())]
-                    .sort_values(by='numero_cita', ascending=False))
+                    .sort_values(by='numero_cita', ascending=False)
+                     )
+        print('citas_cons + quitamos citas dummies: ',len(citas_cons))
+        
         
         # agregamos etiqueta de show y status previo en historico
         citas_cons = (citas_cons
@@ -771,6 +784,7 @@ class ProcessedCrmAtlas:
                         ).assign(
                             kpi_citas_flag_show_compr = lambda x: x.kpi_citas_flag_show_compr.fillna(0)
                         ))
+        print('citas_cons + hcitas_show: ',len(citas_cons))
 
         return self._select_existing_columns(
             citas_cons,
