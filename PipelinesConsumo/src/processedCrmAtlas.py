@@ -783,8 +783,8 @@ class ProcessedCrmAtlas:
                         on='numero_cita',
                         how='left'
                         ).assign(
-                            kpi_citas_flag_show_compr = lambda x: x.kpi_citas_flag_show_compr.fillna(0)
-                            sched_start_date = lambda x: pd.to_datetime(x.sched_start_date).dt.strftime('%Y-%m-%d')
+                            kpi_citas_flag_show_compr = lambda x: x.kpi_citas_flag_show_compr.fillna(0),
+                            sched_start_date = lambda x: pd.to_datetime(x.sched_start_date).dt.strftime('%Y-%m-%d'),
                             sched_end_date = lambda x: pd.to_datetime(x.sched_end_date).dt.strftime('%Y-%m-%d')
                         ))
         print('citas_cons + hcitas_show: ',len(citas_cons))
