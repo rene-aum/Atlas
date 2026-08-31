@@ -247,7 +247,6 @@ class ProcessedCrmAtlas:
             .assign(
                 id_am_comprador=lambda x: self._to_int(x.id_am_comprador),
                 commerce_order_id=lambda x: self._to_int(x.commerce_order_id),
-                sku=lambda x: self._to_int(x.sku),
                 created_date=lambda x: self._to_datetime_str(
                     x.created_date,
                     fmt_string="%Y-%m-%d %H:%M",
@@ -506,8 +505,8 @@ class ProcessedCrmAtlas:
             .groupby("opportunity_id", as_index=False)
             .agg(
                 numero_citas_comprador=("created_date", "nunique"),
-                fecha_primera_cita_visita_comp=("created_date", "min"),
-                fecha_ultima_cita_visita_comp=("created_date", "max"),
+                fecha_primera_cita_visita_comp=("fecha_agendada", "min"),
+                fecha_ultima_cita_visita_comp=("fecha_agendada", "max"),
                 citas_completas_comprador=("citas_completas", "sum"),
             )
             .assign(
