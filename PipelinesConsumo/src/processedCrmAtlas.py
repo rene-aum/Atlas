@@ -420,17 +420,17 @@ class ProcessedCrmAtlas:
             .sort_values(by="created_date")
             .drop_duplicates(subset="case_id", keep="first")
             .assign(
-                fecha_asignacion_perfilamiento_sc=lambda x: pd.to_datetime(
+                fecha_caso_tomado_sc=lambda x: pd.to_datetime(
                     x.created_date,
                     errors="coerce",
                 ).dt.strftime("%Y-%m-%d %H:%M:%S"),
-                asesor_perfilamiento_sc=lambda x: x.created_by.str.upper(),
+                asesor_caso_tomado_perf_sc=lambda x: x.created_by.str.upper(),
             )
             .rename(columns={"case_id": "case_id_perfilamiento_sc",
                              "created_by_id": "asesor_perfilamiento_sc_id"}
                     )
             [["case_id_perfilamiento_sc", "asesor_perfilamiento_sc_id",
-                "asesor_perfilamiento_sc", "fecha_asignacion_perfilamiento_sc"]]
+                "asesor_caso_tomado_perf_sc", "fecha_caso_tomado_sc"]]
         )
 
         asesor_perfilamiento_credito = (
@@ -590,12 +590,16 @@ class ProcessedCrmAtlas:
                         "opportunity_id",
                         "case_id_perfilamiento_sc",
                         "case_status_perfilamiento_sc",
-                        "case_owner_perfilamiento_sc"
+                        "case_owner_perfilamiento_sc",
+                        "case_owner_id",
                     ]
                 ],
                 on="opportunity_id",
                 how="left",
             )
+            .merge(catalogo_usuarios[['id', 'equipo']], left_on='case_owner_id', right_on='id', how='left')
+            .rename(columns={'equipo': 'case_owner_equipo'})
+            .drop(columns=["id"])
             .merge(
                 casos_perfilamiento_credito[
                     [
@@ -609,7 +613,7 @@ class ProcessedCrmAtlas:
             )
             .merge(asesor_perfilamiento_sc, on="case_id_perfilamiento_sc", how="left")
             .merge(catalogo_usuarios[['id', 'equipo']], left_on='asesor_perfilamiento_sc_id', right_on='id', how='left')
-            .rename(columns={'equipo': 'equipo_asesor_perfilamiento_sc',
+            .rename(columns={'equipo': 'equipo_asesor_caso_tomado_perf_sc',
                              })
             .drop(columns=["id"])
             .merge(
@@ -633,9 +637,9 @@ class ProcessedCrmAtlas:
                 ),
                 opportunity_source_aux=lambda x: np.where(x.opportunity_source == (
                     "apartado am"), np.nan, x.opportunity_source_aux_1),
-                flag_perfilamento_sc=lambda x: x.fecha_asignacion_perfilamiento_sc.notna()
+                flag_perfilamento_sc=lambda x: x.fecha_caso_tomado_sc.notna()
                 * 1,
-                flag_perfilamento_credito=lambda x: (
+                flag_caso_tomado_perf_sc=lambda x: (
                     x.fecha_asignacion_perfilamiento_credito.notna()
                 )
                 * 1,
