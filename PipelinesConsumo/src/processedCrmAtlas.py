@@ -713,7 +713,7 @@ class ProcessedCrmAtlas:
                                     [x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_COMPRADOR), x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_VENDEDOR)],
                                     ['comprador', 'vendedor'],
                                     default=''),
-            created_date_day = lambda x: pd.to_datetime(x.created_date).strftime('%Y-%m-%d')
+            created_date_day = lambda x: pd.to_datetime(x.created_date).dt.strftime('%Y-%m-%d')
         )
 
         # agregamos atributos del id de la persona referida en la linea de cita
