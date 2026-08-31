@@ -641,10 +641,25 @@ class ProcessedCrmAtlas:
                 )
                 * 1,
                 opportunity_created_date_day = lambda x: pd.to_datetime(x.opportunity_created_date, errors='coerce').dt.strftime('%Y-%m-%d'),
+                perf_intencion_pago=lambda x: np.where(
+                    (x.perf_contactado == "si") & (x.perf_interesado == "si"),
+                    x.perf_intencion_pago,
+                    np.nan,
+                ),
             )
             .merge(historico_oportunidades_mod, on='opportunity_id', how='left')
             .merge(primer_booker_df, on='opportunity_id', how='left')
             .drop(columns=["opportunity_source_aux_1"])
+        )
+
+        reporte = (
+            reporte
+            .sort_values(
+                "fecha_asignacion_perfilamiento_credito",
+                ascending=False,
+                na_position="last",
+            )
+            .drop_duplicates(subset="opportunity_id", keep="first")
         )
 
         return self._select_existing_columns(
