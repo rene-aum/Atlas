@@ -749,7 +749,8 @@ class ProcessedCrmAtlas:
         citas_cons = (citas_cons
                     .merge(hcitas_proc
                                 .loc[lambda x: x['old_value'].isna()]
-                                .loc[lambda x: x['new_value']=='Scheduled'], 
+                                .loc[lambda x: x['new_value']=='Scheduled']
+                                [['numero_cita', 'booker_id', 'booker_name']], 
                             how = 'left',
                             on = 'numero_cita'))
         print('citas_cons + hcitas: ',len(citas_cons))
