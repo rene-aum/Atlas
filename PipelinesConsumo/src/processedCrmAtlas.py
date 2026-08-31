@@ -766,10 +766,7 @@ class ProcessedCrmAtlas:
 
         # etiquetamos citas dummies
         citas_cons = (citas_cons.assign(
-                                    flag_dummy = np.where(
-                                        (x.opportunity_id.notna() & x.booker_name.isna()),
-                                          1,
-                                          0)
+                                    flag_dummy = np.where( (citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna()), 1, 0)
                                     )
                               .sort_values(by='numero_cita', ascending=False)
                      )
