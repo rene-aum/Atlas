@@ -505,9 +505,9 @@ class ProcessedCrmAtlas:
             
             .groupby("opportunity_id", as_index=False)
             .agg(
-                numero_citas_comprador=("fecha_agendada", "nunique"),
-                fecha_primera_cita_visita_comp=("fecha_agendada", "min"),
-                fecha_ultima_cita_visita_comp=("fecha_agendada", "max"),
+                numero_citas_comprador=("created_date", "nunique"),
+                fecha_primera_cita_visita_comp=("created_date", "min"),
+                fecha_ultima_cita_visita_comp=("created_date", "max"),
                 citas_completas_comprador=("citas_completas", "sum"),
             )
             .assign(
