@@ -15,6 +15,7 @@ try:
         CRM_STATUS_PEDIDOS_ABIERTOS,
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
+        CRM_CRITERIOS_SHOW_CITAS,
     )
     from PipelinesConsumo.src.constants import mexico_tz
 except ModuleNotFoundError:
@@ -28,6 +29,7 @@ except ModuleNotFoundError:
         CRM_STATUS_PEDIDOS_ABIERTOS,
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
+        CRM_CRITERIOS_SHOW_CITAS,
     )
     from src.constants import mexico_tz
 
@@ -694,12 +696,11 @@ class ProcessedCrmAtlas:
             'id_usuario', 'nombre_usuario', 'equipo']]
 
         # historico de citas
-        hcitas_proc = (hcitas_proc[lambda x: x['field']=='Status'][lambda x: x['old_value'].isna()][lambda x: x['new_value']=='Scheduled'].
+        hcitas_proc = (hcitas_proc[lambda x: x['field']=='Status'].
             rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
                     .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
                     .drop_duplicates(subset = ['numero_cita'], keep = 'first')
                     .reset_index(drop=True)
-                    [['numero_cita', 'booker_id', 'booker_name']]
         )
 
         # generamos reporte consumible de citas
@@ -708,11 +709,11 @@ class ProcessedCrmAtlas:
             'fecha_checkin':'check_in',
             'fecha_checkout':'check_out'}
         ).assign(
-            rol=lambda x: np.select(
-                [x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_COMPRADOR)),
-                 x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_VENDEDOR))],
-                ['comprador', 'vendedor'],
-                default='')
+            rol = lambda x: np.select(
+                                    [x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_COMPRADOR), x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_VENDEDOR)],
+                                    ['comprador', 'vendedor'],
+                                    default=''),
+            created_date_day = lambda x: pd.to_datetime(x.created_date).strftime('%Y-%m-%d')
         )
 
         # agregamos atributos del id de la persona referida en la linea de cita
@@ -742,7 +743,11 @@ class ProcessedCrmAtlas:
 
         # agregamos booker y booker id
         citas_cons = (citas_cons
-                    .merge(hcitas_proc, how = 'left', on = 'numero_cita'))
+                    .merge(hcitas_proc
+                                .loc[lambda x: x['old_value'].isna()]
+                                .loc[lambda x: x['new_value']=='Scheduled'], 
+                            how = 'left',
+                            on = 'numero_cita'))
 
         # agregamos equipo del owner y del booker a partir del catálogo de usuarios
         citas_cons = (citas_cons
@@ -750,7 +755,22 @@ class ProcessedCrmAtlas:
                     .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'opportunity_owner_equipo'})
                     .merge(usuarios_proc, how = 'left', left_on = 'booker_id', right_on = 'id_usuario')
                     .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'booker_equipo'})
+                    .loc[lambda x: ~(x.opportunity_owner_id.notna() & x.booker_name.isna())]
                     .sort_values(by='numero_cita', ascending=False))
+        
+        # agregamos etiqueta de show y status previo en historico
+        citas_cons = (citas_cons
+                        .merge(hcitas_proc
+                                .loc[lambda x: x.new_value.isin(CRITERIOS_SHOW_CITAS)]
+                                .assign(kpi_citas_flag_show_compr = 1)
+                                .drop_duplicates(subset=['numero_cita'])
+                                .rename(columns = {'created_date':'kpi_citas_fecha_show_compr','old_value':'status_old_value','new_value':'status_new_value'})
+                                [['numero_cita','status_old_value','status_new_value','kpi_citas_flag_show_compr','kpi_citas_fecha_show_compr']],
+                        on='numero_cita',
+                        how='left'
+                        ).assign(
+                            kpi_citas_flag_show_compr = lambda x: x.kpi_citas_flag_show_compr.fillna(0)
+                        ))
 
         return self._select_existing_columns(
             citas_cons,

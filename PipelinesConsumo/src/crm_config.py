@@ -281,6 +281,11 @@ CRM_STATUS_PEDIDOS_ABIERTOS = [
     "cita para entrega",
 ]
 
+CRM_CRITERIOS_SHOW_CITAS = [
+    'Completed',
+    'In Progress'
+    ]
+
 ############### CONFIGURACION DE OUTPUTS ########################
 
 CRM_CONSUMO_OUTPUT_IDS = {
@@ -402,6 +407,7 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
 CRM_REPORTE_CITAS_COLUMNS = [
     'numero_cita',
     'created_date',
+    'created_date_day',
     'rol',
     'work_type_name',
     'espacio_cita',
@@ -426,5 +432,9 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'opportunity_stage',
     'check_in',
     'check_out',
-    'fecha_reagendamiento'
+    'fecha_reagendamiento',
+    'status_old_value',
+    'status_new_value',
+    'kpi_citas_flag_show_compr',
+    'kpi_citas_fecha_show_compr'
 ]
