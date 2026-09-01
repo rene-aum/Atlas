@@ -302,8 +302,8 @@ CRM_CRITERIOS_SHOW_CITAS = [
     ]
 
 CRM_CRITERIOS_HISTSHOW_CITAS = [
-    'Completed',
-    'In Progress'
+    'completa',
+    'en progreso'
     ]
 
 ############### CONFIGURACION DE OUTPUTS ########################
