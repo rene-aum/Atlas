@@ -129,8 +129,8 @@ CRM_RENAME_DICTS = {
     "casos": {
         "Id": "case_id",
         "Subject": "case_subject",
-        "Owner.Name": "case_owner_perfilamiento_sc",
-        "OwnerId": "case_owner_id",
+        "Owner.Name": "case_owner_name_perf_sc",
+        "OwnerId": "case_owner_id_perf_sc",
         "CaseNumber": "case_number",
         "CreatedDate": "case_created_date",
         "ClosedDate": "case_closed_date",
@@ -281,6 +281,21 @@ CRM_STATUS_PEDIDOS_ABIERTOS = [
     "cita para entrega",
 ]
 
+# Business parameters used by the Sales Center profiling KPI layer.
+# Values are normalized to lowercase and without accents before comparison.
+CRM_EQUIPOS_ESPACIOS = [
+    "patriotismo",
+    "satelite",
+    "torre_bbva",
+    "gran sur",
+]
+
+CRM_EQUIPOS_SALES_CENTER = [
+    "cdmx",
+    "mid",
+    "celula credito",
+]
+
 CRM_CRITERIOS_SHOW_CITAS = [
     'completa',
     'en progeso'
@@ -362,11 +377,13 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "opportunity_source",
     "opportunity_source_aux",
     "opportunity_stage",
-    "flag_perfilamento_sc",
-    "asesor_perfilamiento_sc",
-    "equipo_asesor_perfilamiento_sc",
-    "fecha_asignacion_perfilamiento_sc",
-    "case_owner_perfilamiento_sc",
+    "flag_caso_tomado_perf_sc",
+    "asesor_caso_tomado_perf_sc",
+    "equipo_asesor_caso_tomado_perf_sc",
+    "fecha_caso_tomado_sc",
+    "case_owner_name_perf_sc",
+    "case_owner_id_perf_sc",
+    "case_owner_equipo_perf_sc",
     "case_id_perfilamiento_sc",
     "case_status_perfilamiento_sc",
     "perf_bc_score",
