@@ -699,10 +699,8 @@ class ProcessedCrmAtlas:
             'id_usuario', 'nombre_usuario', 'equipo']]
 
         # historico de citas
-        hcitas_proc = (hcitas_proc[lambda x: x['field']=='Status'].
+        hcitas_proc = (hcitas_proc[lambda x: x['field']=='status'].
             rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
-                    .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
-                    .drop_duplicates(subset = ['numero_cita'], keep = 'first')
                     .reset_index(drop=True)
         )
 
@@ -751,7 +749,9 @@ class ProcessedCrmAtlas:
         citas_cons = (citas_cons
                     .merge(hcitas_proc
                                 .loc[lambda x: x['old_value'].isna()]
-                                .loc[lambda x: x['new_value']=='Scheduled']
+                                .loc[lambda x: x['new_value']=='scheduled']
+                                .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
+                                .drop_duplicates(subset = ['numero_cita'], keep = 'first')
                                 [['numero_cita', 'booker_id', 'booker_name']], 
                             how = 'left',
                             on = 'numero_cita'))
@@ -768,7 +768,7 @@ class ProcessedCrmAtlas:
 
         # etiquetamos citas dummies
         citas_cons = (citas_cons.assign(
-                                    flag_dummy = np.where( (citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna()), 1, 0)
+                                    flag_dummy = (citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna())*1
                                     )
                               .sort_values(by='numero_cita', ascending=False)
                      )
