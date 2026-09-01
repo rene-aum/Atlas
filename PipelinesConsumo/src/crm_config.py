@@ -281,6 +281,22 @@ CRM_STATUS_PEDIDOS_ABIERTOS = [
     "cita para entrega",
 ]
 
+# Business parameters used by the Sales Center profiling KPI layer.
+# Values are normalized to lowercase and without accents before comparison.
+CRM_EQUIPOS_ESPACIOS = [
+    "patriotismo",
+    "satelite",
+    "torre_bbva",
+    "gran sur",
+]
+
+CRM_EQUIPOS_SALES_CENTER = [
+    "cdmx",
+    "mid",
+    "celula credito",
+]
+
+
 ############### CONFIGURACION DE OUTPUTS ########################
 
 CRM_CONSUMO_OUTPUT_IDS = {

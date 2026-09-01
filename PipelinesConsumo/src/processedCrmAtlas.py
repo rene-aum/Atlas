@@ -13,6 +13,8 @@ try:
         CRM_REPORTE_SIMULACIONES_COLUMNS,
         CRM_STATUS_CITA_COMPLETA,
         CRM_STATUS_PEDIDOS_ABIERTOS,
+        CRM_EQUIPOS_SALES_CENTER,
+        CRM_EQUIPOS_ESPACIOS,
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
     )
@@ -26,6 +28,8 @@ except ModuleNotFoundError:
         CRM_REPORTE_SIMULACIONES_COLUMNS,
         CRM_STATUS_CITA_COMPLETA,
         CRM_STATUS_PEDIDOS_ABIERTOS,
+        CRM_EQUIPOS_SALES_CENTER,
+        CRM_EQUIPOS_ESPACIOS,
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
     )
@@ -34,6 +38,18 @@ except ModuleNotFoundError:
 
 class ProcessedCrmAtlas:
     """Business transforms for Salesforce CRM reports used by Atlas Consumo."""
+
+    SALES_CENTER_KPI_REQUIRED_COLUMNS = {
+        "opportunity_id",
+        "fecha_asignacion",
+        "case_owner_equipo_perf_sc",
+        "equipo_asesor_caso_tomado_perf_sc",
+        "fecha_caso_tomado_sc",
+        "perf_fecha_primer_contacto",
+        "perf_contactado",
+        "perf_interesado",
+        "perf_intencion_pago",
+    }
 
     def __init__(self):
         """Store the run date in Mexico City timezone for date-window logic."""
@@ -194,7 +210,7 @@ class ProcessedCrmAtlas:
                 case_created_date=lambda x: self._to_datetime_str(x.case_created_date),
                 case_closed_date=lambda x: self._to_datetime_str(x.case_closed_date),
                 case_status=lambda x: self._normalize_series(x.case_status),
-                case_subject_clean=lambda x: self._normalize_series(x.case_subject),
+                case_subject=lambda x: self._normalize_series(x.case_subject),
             )
             [lambda x: x.case_subject.notna()]
         )
@@ -288,9 +304,9 @@ class ProcessedCrmAtlas:
                     x.created_date,
                     fmt_string="%Y-%m-%d %H:%M",
                 ),
-                field_clean=lambda x: self._normalize_series(x.field),
-                old_value_clean=lambda x: self._normalize_series(x.old_value),
-                new_value_clean=lambda x: self._normalize_series(x.new_value),
+                field=lambda x: self._normalize_series(x.field),
+                old_value=lambda x: self._normalize_series(x.old_value),
+                new_value=lambda x: self._normalize_series(x.new_value),
             )
         )
         return historico
@@ -309,9 +325,9 @@ class ProcessedCrmAtlas:
                         x.created_date,
                         fmt_string="%Y-%m-%d %H:%M",
                     ),
-                    field_clean=lambda x: self._normalize_series(x.field),
-                    old_value_clean=lambda x: self._normalize_series(x.old_value),
-                    new_value_clean=lambda x: self._normalize_series(x.new_value),
+                    field=lambda x: self._normalize_series(x.field),
+                    old_value=lambda x: self._normalize_series(x.old_value),
+                    new_value=lambda x: self._normalize_series(x.new_value),
                     created_by = lambda x: self._normalize_series(x.created_by).str.upper()
                 )
             )
@@ -331,9 +347,9 @@ class ProcessedCrmAtlas:
                     x.created_date,
                     fmt_string="%Y-%m-%d %H:%M",
                 ),
-                field_clean=lambda x: self._normalize_series(x.field),
-                old_value_clean=lambda x: self._normalize_series(x.old_value),
-                new_value_clean=lambda x: self._normalize_series(x.new_value),
+                field=lambda x: self._normalize_series(x.field),
+                old_value=lambda x: self._normalize_series(x.old_value),
+                new_value=lambda x: self._normalize_series(x.new_value),
             )
         )
         return historico
@@ -385,7 +401,7 @@ class ProcessedCrmAtlas:
         Inputs are already-normalized DataFrames from the proc_* methods above.
         """
         casos_perfilamiento_sc = (
-            casos[lambda x: x.case_subject_clean.eq(
+            casos[lambda x: x.case_subject.eq(
                 "perfilamiento contact center")]
             .rename(
                 columns={
@@ -396,7 +412,7 @@ class ProcessedCrmAtlas:
         )
 
         casos_perfilamiento_credito = (
-            casos[lambda x: x.case_subject_clean.eq("perfilamiento credito")]
+            casos[lambda x: x.case_subject.eq("perfilamiento credito")]
             .rename(
                 columns={
                     "case_id": "case_id_perfilamiento_credito",
@@ -413,9 +429,9 @@ class ProcessedCrmAtlas:
                 )
             ]
             [
-                lambda x: x.field_clean.eq("status")
-                & x.old_value_clean.eq("abierto")
-                & x.new_value_clean.eq("in progress")
+                lambda x: x.field.eq("status")
+                & x.old_value.eq("abierto")
+                & x.new_value.eq("in progress")
             ]
             .sort_values(by="created_date")
             .drop_duplicates(subset="case_id", keep="first")
@@ -442,9 +458,9 @@ class ProcessedCrmAtlas:
                 )
             ]
             [
-                lambda x: x.field_clean.eq("status")
-                & x.old_value_clean.eq("abierto")
-                & x.new_value_clean.eq("in progress")
+                lambda x: x.field.eq("status")
+                & x.old_value.eq("abierto")
+                & x.new_value.eq("in progress")
             ]
             .sort_values(by="created_date")
             .drop_duplicates(subset="case_id", keep="first")
@@ -547,9 +563,9 @@ class ProcessedCrmAtlas:
                     )
         historico_oportunidades_mod = (historico_oportunidades
                                 .sort_values(by=['opportunity_id','created_date'],ascending=[False,False])
-                                [lambda x: x.new_value_clean=='cerrada (perdida)']
+                                [lambda x: x.new_value=='cerrada (perdida)']
                                 .drop_duplicates('opportunity_id')
-                                .rename(columns={'old_value_clean':'stage_antes_de_cierre',
+                                .rename(columns={'old_value':'stage_antes_de_cierre',
                                                 'created_by':'usuario_que_cerro'})
                                 [['opportunity_id','stage_antes_de_cierre','usuario_que_cerro']]
                                 )
@@ -562,8 +578,8 @@ class ProcessedCrmAtlas:
             )
         primer_booker_aux = (historico_citas
             [lambda x: x.numero_cita.isin(citas_comprador_aux.numero_cita.unique())]
-            [lambda x: x.field_clean=='status']
-            [lambda x: x.old_value.isna() & (x.new_value_clean=='scheduled')]
+            [lambda x: x.field=='status']
+            [lambda x: x.old_value.isna() & (x.new_value=='scheduled')]
             .sort_values(by=['numero_cita','created_date'],ascending=[False,True])
             .drop_duplicates(subset=['numero_cita'],keep='first')
             .merge(catalogo_usuarios[['id','equipo']],left_on='created_by_id',right_on='id',how='left')
@@ -697,7 +713,7 @@ class ProcessedCrmAtlas:
             'id_usuario', 'nombre_usuario', 'equipo']]
 
         # historico de citas
-        hcitas_proc = (hcitas_proc[lambda x: x['field']=='Status'][lambda x: x['old_value'].isna()][lambda x: x['new_value']=='Scheduled'].
+        hcitas_proc = (hcitas_proc[lambda x: x['field']=='status'][lambda x: x['old_value'].isna()][lambda x: x['new_value']=='scheduled'].
             rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
                     .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
                     .drop_duplicates(subset = ['numero_cita'], keep = 'first')
@@ -771,13 +787,170 @@ class ProcessedCrmAtlas:
         """
         """
         reporte = (historico_oportunidades
-            [lambda x: x.field_clean=='stagename']
+            [lambda x: x.field=='stagename']
             .sort_values(by=['opportunity_id','created_date'],ascending=[True,True])
             .assign(created_by = lambda x: x.created_by.str.upper())
-            [['opportunity_id','old_value_clean','new_value_clean','created_by','created_date']]
+            [['opportunity_id','old_value','new_value','created_by','created_date']]
             .merge(oportunidades[['opportunity_id','opportunity_name']],on='opportunity_id',how='left')
             ) 
         return reporte
+
+
+
+    def _validate_sales_center_kpi_input(self, reporte_oportunidades):
+        """Require the canonical opportunities report grain and KPI inputs."""
+        missing_columns = self.SALES_CENTER_KPI_REQUIRED_COLUMNS.difference(
+            reporte_oportunidades.columns
+        )
+        if missing_columns:
+            raise ValueError(
+                "reporte_oportunidades: faltan columnas requeridas para KPIs "
+                f"Sales Center: {sorted(missing_columns)}"
+            )
+
+        duplicate_ids = reporte_oportunidades["opportunity_id"].duplicated(
+            keep=False
+        )
+        if duplicate_ids.any():
+            sample_ids = (
+                reporte_oportunidades.loc[duplicate_ids, "opportunity_id"]
+                .dropna()
+                .astype(str)
+                .unique()[:10]
+                .tolist()
+            )
+            raise ValueError(
+                "No se pueden calcular KPIs Sales Center con opportunity_id "
+                f"duplicados. Ejemplos: {sample_ids}"
+            )
+
+    def add_kpis_perfilamiento_sales_center(self, reporte_oportunidades):
+        """
+        Add Sales Center profiling flags and activity dates to opportunities.
+
+        Assignment is identified when either the current owner of the Contact
+        Center profiling case or the advisor who took that case belongs to a
+        configured Sales Center team.
+        """
+        self._validate_sales_center_kpi_input(reporte_oportunidades)
+
+        equipos_sales_center = [
+            self._normalize_value(equipo)
+            for equipo in CRM_EQUIPOS_SALES_CENTER
+        ]
+        
+        reporte = reporte_oportunidades.copy()
+        fecha_asignacion = pd.to_datetime(reporte["fecha_asignacion"],dayfirst=True).dt.strftime('Y-%m-%d')
+        fecha_caso_tomado = pd.to_datetime(reporte["fecha_caso_tomado_sc"]).dt.strftime('Y-%m-%d')
+        fecha_primer_contacto = (pd.to_datetime(
+                                    reporte["perf_fecha_primer_contacto"],
+                                    dayfirst=True
+                                ).dt.strftime('Y-%m-%d')
+                                )
+        resultado = (reporte.assign(
+            fecha_asignacion=fecha_asignacion,
+            perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago),
+            kpi_sales_center_flag_asignado=lambda x: (
+                x.case_owner_equipo_perf_sc.isin(equipos_sales_center)
+                | x.equipo_asesor_caso_tomado_perf_sc.isin(
+                    equipos_sales_center
+                )
+            ).astype(int),
+            kpi_sales_center_fecha_asignado=lambda x: (
+                x.fecha_asignacion.fillna(fecha_caso_tomado).fillna(
+                    fecha_primer_contacto
+                )
+            ),
+            kpi_sales_center_flag_contactado=lambda x: (
+                x.kpi_sales_center_flag_asignado.eq(1)
+                & x.perf_contactado.eq('si')
+            ).astype(int),
+            kpi_sales_center_flag_intento_contacto=lambda x: (
+                x.kpi_sales_center_flag_asignado.eq(1)
+                & fecha_primer_contacto.notna()
+            ).astype(int),
+            kpi_sales_center_fecha_contactado=lambda x: pd.Series(
+                np.where(
+                    x.kpi_sales_center_flag_contactado.eq(1)
+                    | x.kpi_sales_center_flag_intento_contacto.eq(1),
+                    fecha_primer_contacto.fillna(fecha_caso_tomado),
+                    np.nan,
+                ),
+                index=x.index,
+                dtype="object",
+            ),
+            kpi_sales_center_flag_interesado=lambda x: (
+                x.kpi_sales_center_flag_asignado.eq(1)
+                & x.kpi_sales_center_flag_contactado.eq(1)
+                & x.perf_interesado.eq('si')
+            ).astype(int),
+            kpi_sales_center_flag_perfilado=lambda x: (
+                x.kpi_sales_center_flag_asignado.eq(1)
+                & x.kpi_sales_center_flag_contactado.eq(1)
+                & x.perf_intencion_pago.notna()
+                & x.kpi_sales_center_flag_interesado.eq(1)
+            ).astype(int),
+            kpi_sales_center_flag_perfilado_credito=lambda x: (
+                x.kpi_sales_center_flag_perfilado.eq(1)
+                & x.perf_intencion_pago.eq("credito")
+            ).astype(int),
+            kpi_sales_center_flag_perfilado_contado=lambda x: (
+                x.kpi_sales_center_flag_perfilado.eq(1)
+                & x.perf_intencion_pago.eq("contado")
+            ).astype(int),
+        ))
+        return resultado
+
+
+    def vista_actividad_kpis_perfilamiento_sales_center(
+        self, reporte_oportunidades
+    ):
+        """Aggregate Sales Center assignment and profiling activity by date."""
+        kpi_sc = self.add_kpis_perfilamiento_sales_center(
+            reporte_oportunidades
+        )
+
+        sc_asignados = (
+            kpi_sc.groupby(
+                "kpi_sales_center_fecha_asignado", as_index=False
+            )
+            .kpi_sales_center_flag_asignado.sum()
+            .rename(
+                columns={
+                    "kpi_sales_center_fecha_asignado": "fecha_actividad"
+                }
+            )
+        )
+        metric_columns = [
+            "kpi_sales_center_flag_intento_contacto",
+            "kpi_sales_center_flag_contactado",
+            "kpi_sales_center_flag_interesado",
+            "kpi_sales_center_flag_perfilado",
+            "kpi_sales_center_flag_perfilado_credito",
+            "kpi_sales_center_flag_perfilado_contado",
+        ]
+        sc_contactados_perfilados = (
+            kpi_sc.groupby(
+                "kpi_sales_center_fecha_contactado", as_index=False
+            )[metric_columns]
+            .sum()
+            .rename(
+                columns={
+                    "kpi_sales_center_fecha_contactado": "fecha_actividad"
+                }
+            )
+        )
+
+        return (
+            sc_asignados.merge(
+                sc_contactados_perfilados,
+                on="fecha_actividad",
+                how="outer",
+            )
+            .fillna(0)
+            .sort_values("fecha_actividad")
+            .reset_index(drop=True)
+        )
     
 ##########################################################################################################################################
 ####################################################### PIPELINE  ########################################################################
