@@ -439,5 +439,7 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'status_new_value',
     'kpi_citas_flag_show_compr',
     'kpi_citas_fecha_show_compr',
+    'kpi_citas_flag_histshow_compr',
+    'kpi_citas_fecha_histshow_compr,
     'flag_dummy'
 ]
