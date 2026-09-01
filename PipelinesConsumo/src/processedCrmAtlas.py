@@ -16,6 +16,7 @@ try:
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
         CRM_CRITERIOS_SHOW_CITAS,
+        CRM_CRITERIOS_HISTSHOW_CITAS,
     )
     from PipelinesConsumo.src.constants import mexico_tz
 except ModuleNotFoundError:
@@ -30,6 +31,7 @@ except ModuleNotFoundError:
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
         CRM_CRITERIOS_SHOW_CITAS,
+        CRM_CRITERIOS_HISTSHOW_CITAS,
     )
     from src.constants import mexico_tz
 
@@ -776,15 +778,16 @@ class ProcessedCrmAtlas:
         # agregamos etiqueta de show y status previo en historico
         citas_cons = (citas_cons
                         .merge(hcitas_proc
-                                .loc[lambda x: x.new_value.isin(CRM_CRITERIOS_SHOW_CITAS)]
-                                .assign(kpi_citas_flag_show_compr = 1)
+                                .loc[lambda x: x.new_value.isin(CRM_CRITERIOS_HISTSHOW_CITAS)]
+                                .assign(kpi_citas_flag_histshow_compr = 1)
                                 .drop_duplicates(subset=['numero_cita'])
-                                .rename(columns = {'created_date':'kpi_citas_fecha_show_compr','old_value':'status_old_value','new_value':'status_new_value'})
+                                .rename(columns = {'created_date':'kpi_citas_fecha_histshow_compr','old_value':'status_old_value','new_value':'status_new_value'})
                                 [['numero_cita','status_old_value','status_new_value','kpi_citas_flag_show_compr','kpi_citas_fecha_show_compr']],
                         on='numero_cita',
                         how='left'
                         ).assign(
-                            kpi_citas_flag_show_compr = lambda x: x.kpi_citas_flag_show_compr.fillna(0),
+                            kpi_citas_flag_show_compr = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
+                            kpi_citas_flag_histshow_compr = lambda x: x.kpi_citas_flag_histshow_compr.fillna(0),
                             sched_start_date = lambda x: pd.to_datetime(x.sched_start_time).dt.strftime('%Y-%m-%d'),
                             sched_end_date = lambda x: pd.to_datetime(x.sched_end_time).dt.strftime('%Y-%m-%d')
                         ))
