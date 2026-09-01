@@ -282,6 +282,11 @@ CRM_STATUS_PEDIDOS_ABIERTOS = [
 ]
 
 CRM_CRITERIOS_SHOW_CITAS = [
+    'completa',
+    'en progeso'
+    ]
+
+CRM_CRITERIOS_HISTSHOW_CITAS = [
     'Completed',
     'In Progress'
     ]
