@@ -782,7 +782,7 @@ class ProcessedCrmAtlas:
                                 .assign(kpi_citas_flag_histshow_compr = 1)
                                 .drop_duplicates(subset=['numero_cita'])
                                 .rename(columns = {'created_date':'kpi_citas_fecha_histshow_compr','old_value':'status_old_value','new_value':'status_new_value'})
-                                [['numero_cita','status_old_value','status_new_value','kpi_citas_flag_show_compr','kpi_citas_fecha_show_compr']],
+                                [['numero_cita','status_old_value','status_new_value','kpi_citas_flag_histshow_compr','kpi_citas_fecha_histshow_compr']],
                         on='numero_cita',
                         how='left'
                         ).assign(
