@@ -786,6 +786,7 @@ class ProcessedCrmAtlas:
         citas_cons = (citas_cons.assign(
                                     flag_cita_agendada_comprador = (~(citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna())
                                                                     &(citas_cons.rol.fillna('').isin(['','comprador']) & citas_cons.work_type_name.fillna('').isin(['','cita inicial visita comprador']))
+                                                                    &(~citas_cons.duplicated(subset=['work_type_name','sf_order_id','created_date']))
                                                                    )*1
                                     )
                               .sort_values(by='numero_cita', ascending=False)
