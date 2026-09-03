@@ -17,6 +17,8 @@ try:
         CRM_EQUIPOS_ESPACIOS,
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
+        CRM_CRITERIOS_SHOW_CITAS,
+        CRM_CRITERIOS_HISTSHOW_CITAS,
     )
     from PipelinesConsumo.src.constants import mexico_tz
 except ModuleNotFoundError:
@@ -32,6 +34,8 @@ except ModuleNotFoundError:
         CRM_EQUIPOS_ESPACIOS,
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
+        CRM_CRITERIOS_SHOW_CITAS,
+        CRM_CRITERIOS_HISTSHOW_CITAS,
     )
     from src.constants import mexico_tz
 
