@@ -297,6 +297,15 @@ CRM_EQUIPOS_SALES_CENTER = [
     "celula credito",
 ]
 
+CRM_CRITERIOS_SHOW_CITAS = [
+    'completa',
+    'en progeso'
+    ]
+
+CRM_CRITERIOS_HISTSHOW_CITAS = [
+    'completed',
+    'in progress'
+    ]
 
 ############### CONFIGURACION DE OUTPUTS ########################
 
@@ -420,12 +429,15 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
 
 CRM_REPORTE_CITAS_COLUMNS = [
     'numero_cita',
+    'created_time',
     'created_date',
     'rol',
     'work_type_name',
     'espacio_cita',
     'sched_start_time',
+    'sched_start_date',
     'sched_end_time',
+    'sched_end_date',
     'booker_name',
     'booker_equipo',
     'opportunity_owner',
@@ -437,7 +449,6 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'perf_bc_score',
     'opportunity_id',
     'opportunity_name',
-    'commerce_order_id',
     'sf_order_id',
     'nombre',
     'email',
@@ -445,5 +456,7 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'opportunity_stage',
     'check_in',
     'check_out',
-    'fecha_reagendamiento'
+    'fecha_reagendamiento',
+    'flag_cita_agendada_comprador',
+    'flag_cita_show_comprador'
 ]
