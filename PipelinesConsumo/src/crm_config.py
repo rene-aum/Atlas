@@ -298,7 +298,7 @@ CRM_EQUIPOS_SALES_CENTER = [
 
 CRM_CRITERIOS_SHOW_CITAS = [
     'completa',
-    'en progreso'
+    'en progeso'
     ]
 
 CRM_CRITERIOS_HISTSHOW_CITAS = [
