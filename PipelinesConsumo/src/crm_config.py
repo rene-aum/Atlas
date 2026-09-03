@@ -288,6 +288,7 @@ CRM_EQUIPOS_ESPACIOS = [
     "satelite",
     "torre_bbva",
     "gran sur",
+    "torre bbva"
 ]
 
 CRM_EQUIPOS_SALES_CENTER = [
