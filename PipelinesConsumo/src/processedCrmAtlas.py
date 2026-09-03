@@ -690,6 +690,7 @@ class ProcessedCrmAtlas:
         acclientes,
         hcitas_proc
     ):
+        print('lineas iniciales en citas: ',len(citas_proc))
         # cuentas
         acclientes = acclientes.rename(columns={'nickname': 'nombre',
                                                      'phone': 'telefono'})
@@ -713,25 +714,24 @@ class ProcessedCrmAtlas:
             'id_usuario', 'nombre_usuario', 'equipo']]
 
         # historico de citas
-        hcitas_proc = (hcitas_proc[lambda x: x['field']=='status'][lambda x: x['old_value'].isna()][lambda x: x['new_value']=='scheduled'].
+        hcitas_proc = (hcitas_proc[lambda x: x['field']=='status'].
             rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
-                    .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
-                    .drop_duplicates(subset = ['numero_cita'], keep = 'first')
                     .reset_index(drop=True)
-                    [['numero_cita', 'booker_id', 'booker_name']]
         )
 
         # generamos reporte consumible de citas
         citas_cons = citas_proc.copy().rename(
-            columns={'territorio_cita': 'espacio_cita',
-            'fecha_checkin':'check_in',
-            'fecha_checkout':'check_out'}
+            columns={
+                'created_date':'created_time',
+                'territorio_cita': 'espacio_cita',
+                'fecha_checkin':'check_in',
+                'fecha_checkout':'check_out'}
         ).assign(
-            rol=lambda x: np.select(
-                [x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_COMPRADOR)),
-                 x['work_type_name'].str.lower().isin((CRM_WORK_TYPES_VENDEDOR))],
-                ['comprador', 'vendedor'],
-                default='')
+            rol = lambda x: np.select(
+                                    [x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_COMPRADOR), x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_VENDEDOR)],
+                                    ['comprador', 'vendedor'],
+                                    default=''),
+            created_date = lambda x: pd.to_datetime(x.created_time).dt.strftime('%Y-%m-%d')
         )
 
         # agregamos atributos del id de la persona referida en la linea de cita
@@ -761,7 +761,14 @@ class ProcessedCrmAtlas:
 
         # agregamos booker y booker id
         citas_cons = (citas_cons
-                    .merge(hcitas_proc, how = 'left', on = 'numero_cita'))
+                    .merge(hcitas_proc
+                                .loc[lambda x: x['old_value'].isna()]
+                                .loc[lambda x: x['new_value']=='scheduled']
+                                .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
+                                .drop_duplicates(subset = ['numero_cita'], keep = 'first')
+                                [['numero_cita', 'booker_id', 'booker_name']], 
+                            how = 'left',
+                            on = 'numero_cita'))
 
         # agregamos equipo del owner y del booker a partir del catálogo de usuarios
         citas_cons = (citas_cons
@@ -769,12 +776,38 @@ class ProcessedCrmAtlas:
                     .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'opportunity_owner_equipo'})
                     .merge(usuarios_proc, how = 'left', left_on = 'booker_id', right_on = 'id_usuario')
                     .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'booker_equipo'})
-                    .sort_values(by='numero_cita', ascending=False))
+                     )
+
+        # etiquetamos citas dummies
+        citas_cons = (citas_cons.assign(
+                                    flag_cita_agendada_comprador = (~(citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna()))*1
+                                    )
+                              .sort_values(by='numero_cita', ascending=False)
+                     )        
+        
+        # agregamos etiqueta de show y status previo en historico
+        citas_cons = (citas_cons
+                        .merge(hcitas_proc
+                                .loc[lambda x: x.new_value.isin(CRM_CRITERIOS_HISTSHOW_CITAS)]
+                                .assign(kpi_citas_flag_histshow_compr = 1)
+                                .drop_duplicates(subset=['numero_cita'])
+                                .rename(columns = {'created_date':'kpi_citas_fecha_histshow_compr','old_value':'status_old_value','new_value':'status_new_value'})
+                                [['numero_cita','status_old_value','status_new_value','kpi_citas_flag_histshow_compr','kpi_citas_fecha_histshow_compr']],
+                        on='numero_cita',
+                        how='left'
+                        ).assign(
+                            flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
+                            kpi_citas_flag_histshow_compr = lambda x: x.kpi_citas_flag_histshow_compr.fillna(0),
+                            sched_start_date = lambda x: pd.to_datetime(x.sched_start_time).dt.strftime('%Y-%m-%d'),
+                            sched_end_date = lambda x: pd.to_datetime(x.sched_end_time).dt.strftime('%Y-%m-%d')
+                        ))
+        print('lineas finales en citas: ',len(citas_cons))
 
         return self._select_existing_columns(
             citas_cons,
             self._dedupe_columns(CRM_REPORTE_CITAS_COLUMNS),
         )
+
 
 
     def proc_reporte_simulaciones(self,solicitudes_credito):
