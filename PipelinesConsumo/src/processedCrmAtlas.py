@@ -696,120 +696,139 @@ class ProcessedCrmAtlas:
     ):
         print('lineas iniciales en citas: ',len(citas_proc))
         # cuentas
-        acclientes = acclientes.rename(columns={'nickname': 'nombre',
-                                                     'phone': 'telefono'})
-        acclientes['id_am'] = (pd.to_numeric(acclientes['id_am'], errors='coerce').astype('Int64'))
+        acclientes = (acclientes
+                        .rename(columns={'nickname': 'nombre','phone': 'telefono'})
+                        .assign(id_am = pd.to_numeric(acclientes['id_am'], errors='coerce').astype('Int64'))
+                        )
 
         # pedidos
-        pedidos_proc = pedidos_proc[['commerce_order_id', 'id_am_vendedor', 'id_am_comprador', 'sf_order_id']].rename(
-            columns={'id_am_vendedor': 'id_am_vendedor_aux', 'id_am_comprador': 'id_am_comprador_aux'})
-        pedidos_proc['commerce_order_id'] = pd.to_numeric(
-            pedidos_proc['commerce_order_id'], errors='coerce').astype('Int64')
+        pedidos_proc = (pedidos_proc
+                        [['commerce_order_id', 'id_am_vendedor', 'id_am_comprador', 'sf_order_id']]
+                        .rename(columns={'id_am_vendedor': 'id_am_vendedor_aux', 'id_am_comprador': 'id_am_comprador_aux'})
+                        .assign(commerce_order_id = pd.to_numeric(pedidos_proc['commerce_order_id'], errors='coerce').astype('Int64'))
+                        )
 
         # oportunidades
-        oppss_proc = oppss_proc[['opportunity_id', 'owner_id', 'opportunity_owner',
-                                 'perf_bc_score', 'perf_intencion_pago', 'opportunity_stage']]
+        oppss_proc = (oppss_proc
+                        [['opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage']]
+                        )
 
         # usuarios
-        usuarios_proc = usuarios_proc.rename(
-            columns={'id': 'id_usuario', 'name': 'nombre_usuario'}
-        )
-        usuarios_proc = usuarios_proc[[
-            'id_usuario', 'nombre_usuario', 'equipo']]
+        usuarios_proc = (usuarios_proc
+                        .rename(columns={'id': 'id_usuario', 'name': 'nombre_usuario'})
+                        [['id_usuario', 'nombre_usuario', 'equipo']]
+                        )
 
         # historico de citas
-        hcitas_proc = (hcitas_proc[lambda x: x['field']=='status'].
-            rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
-                    .reset_index(drop=True)
-        )
+        hcitas_proc = (hcitas_proc
+                        [lambda x: x['field']=='status']
+                        .rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
+                        .reset_index(drop=True)
+                        )
 
         # generamos reporte consumible de citas
-        citas_cons = citas_proc.copy().rename(
-            columns={
-                'created_date':'created_time',
-                'territorio_cita': 'espacio_cita',
-                'fecha_checkin':'check_in',
-                'fecha_checkout':'check_out'}
-        ).assign(
-            rol = lambda x: np.select(
-                                    [x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_COMPRADOR), x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_VENDEDOR)],
-                                    ['comprador', 'vendedor'],
-                                    default=''),
-            created_date = lambda x: pd.to_datetime(x.created_time).dt.strftime('%Y-%m-%d')
-        )
+        citas_cons = (citas_proc.copy()
+                    .rename(columns={
+                            'created_date':'created_time',
+                            'territorio_cita': 'espacio_cita',
+                            'fecha_checkin':'check_in',
+                            'fecha_checkout':'check_out'})
+                    .assign(
+                        rol = lambda x: np.select(
+                                        [x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_COMPRADOR), x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_VENDEDOR)],
+                                        ['comprador', 'vendedor'],
+                                        default=''),
+                        created_date = lambda x: pd.to_datetime(x.created_time).dt.strftime('%Y-%m-%d')
+                        )
+                    )
 
         # agregamos atributos del id de la persona referida en la linea de cita
-        citas_cons['id_am'] = pd.to_numeric(citas_cons['id_am'], errors='coerce').astype('Int64')
-        citas_cons = citas_cons.merge(
-            acclientes[['id_am', 'nombre', 'email', 'telefono']], how='left', on='id_am')
+        citas_cons = (citas_cons
+                        .assign(id_am = pd.to_numeric(citas_cons['id_am'], errors='coerce').astype('Int64'))
+                        .merge(acclientes[['id_am', 'nombre', 'email', 'telefono']], 
+                                how='left', 
+                                on='id_am'))
 
         # agregamos rol comprador o vendedor
-        citas_cons['commerce_order_id'] = pd.to_numeric(citas_cons['commerce_order_id'], errors='coerce').astype('Int64')
-        citas_cons = citas_cons.merge(
-            pedidos_proc, how='left', on='commerce_order_id'
-        ).assign(
-            rol_2=lambda x: np.select(
-                [x['id_am'].eq(x['id_am_vendedor_aux']).fillna(False).to_numpy(dtype=bool),
-                 x['id_am'].eq(x['id_am_comprador_aux']).fillna(False).to_numpy(dtype=bool)],
-                ['vendedor',
-                 'comprador'],
-                default='desconocido'
-            )
-
-        ).drop(columns=['id_am_vendedor_aux', 'id_am_comprador_aux'])
+        citas_cons = (citas_cons
+                        .assign(commerce_order_id = pd.to_numeric(citas_cons['commerce_order_id'], errors='coerce').astype('Int64'))
+                        .merge(pedidos_proc, 
+                                how='left', 
+                                on='commerce_order_id')
+                        .drop(columns=['id_am_vendedor_aux', 'id_am_comprador_aux'])
+                    )
 
         # agregamos id y nombre de owner, bc score y perfilamiento de sc y cc a partir del reporte de oportunidades
-        citas_cons = citas_cons.merge(
-            oppss_proc, how='left', on='opportunity_id'
-        ).rename(columns={'owner_id': 'opportunity_owner_id'})
+        citas_cons = (citas_cons
+                        .merge(oppss_proc, 
+                                how='left', 
+                                on='opportunity_id')
+                        .rename(columns={'owner_id': 'opportunity_owner_id'})
+                    )
 
         # agregamos booker y booker id
         citas_cons = (citas_cons
-                    .merge(hcitas_proc
-                                .loc[lambda x: x['old_value'].isna()]
-                                .loc[lambda x: x['new_value']=='scheduled']
-                                .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
-                                .drop_duplicates(subset = ['numero_cita'], keep = 'first')
-                                [['numero_cita', 'booker_id', 'booker_name']], 
-                            how = 'left',
-                            on = 'numero_cita'))
+                        .merge((hcitas_proc
+                                    .loc[lambda x: x['old_value'].isna()]
+                                    .loc[lambda x: x['new_value']=='scheduled']
+                                    .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
+                                    .drop_duplicates(subset = ['numero_cita'], keep = 'first')
+                                    [['numero_cita', 'booker_id', 'booker_name']]), 
+                                how = 'left',
+                                on = 'numero_cita'
+                                )
+                    )
 
         # agregamos equipo del owner y del booker a partir del catálogo de usuarios
         citas_cons = (citas_cons
-                    .merge(usuarios_proc, how = 'left', left_on='opportunity_owner_id', right_on = 'id_usuario')
-                    .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'opportunity_owner_equipo'})
-                    .merge(usuarios_proc, how = 'left', left_on = 'booker_id', right_on = 'id_usuario')
-                    .drop(columns = ['id_usuario', 'nombre_usuario']).rename(columns = {'equipo':'booker_equipo'})
+                        .merge(usuarios_proc, 
+                                how = 'left', 
+                                left_on='opportunity_owner_id', 
+                                right_on = 'id_usuario')
+                        .drop(columns = ['id_usuario', 'nombre_usuario'])
+                        .rename(columns = {'equipo':'opportunity_owner_equipo'})
+                        .merge(usuarios_proc, 
+                                how = 'left', 
+                                left_on = 'booker_id', 
+                                right_on = 'id_usuario')
+                        .drop(columns = ['id_usuario', 'nombre_usuario'])
+                        .rename(columns = {'equipo':'booker_equipo'})
                      )
-
-        # etiquetamos citas dummies
-        citas_cons = (citas_cons.assign(
-                                    flag_dummy = (citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna())*1,
-                                    flag_cita_agendada_comprador = (~(citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna())
-                                                                    &(citas_cons.rol.fillna('').isin(['','comprador']) & citas_cons.work_type_name.fillna('').isin(['','cita inicial visita comprador']))
-                                                                    &(~citas_cons.duplicated(subset=['work_type_name','sf_order_id','created_date']))
-                                                                   )*1
-                                    )
-                              .sort_values(by='numero_cita', ascending=False)
-                     )        
         
-        # agregamos etiqueta de show y status previo en historico
+        # agregamos etiqueta de show y status previo usando específicamente el historico; por ahora no se usa pero es una alternativa
         citas_cons = (citas_cons
-                        .merge(hcitas_proc
-                                .loc[lambda x: x.new_value.isin(CRM_CRITERIOS_HISTSHOW_CITAS)]
-                                .assign(kpi_citas_flag_histshow_compr = 1)
-                                .drop_duplicates(subset=['numero_cita'])
-                                .rename(columns = {'created_date':'kpi_citas_fecha_histshow_compr','old_value':'status_old_value','new_value':'status_new_value'})
-                                [['numero_cita','status_old_value','status_new_value','kpi_citas_flag_histshow_compr','kpi_citas_fecha_histshow_compr']],
-                        on='numero_cita',
-                        how='left'
-                        ).assign(
-                            flag_show = (citas_cons.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
-                            flag_cita_show_comprador = lambda x: (x.flag_cita_agendada_comprador & x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
-                            kpi_citas_flag_histshow_compr = lambda x: x.kpi_citas_flag_histshow_compr.fillna(0),
-                            sched_start_date = lambda x: pd.to_datetime(x.sched_start_time).dt.strftime('%Y-%m-%d'),
-                            sched_end_date = lambda x: pd.to_datetime(x.sched_end_time).dt.strftime('%Y-%m-%d')
-                        ))
+                        .merge((hcitas_proc
+                                    .loc[lambda x: x.new_value.isin(CRM_CRITERIOS_HISTSHOW_CITAS)]
+                                    .assign(kpi_citas_flag_histshow_compr = 1)
+                                    .drop_duplicates(subset=['numero_cita'])
+                                    .rename(columns = {'created_date':'kpi_citas_fecha_histshow_compr','old_value':'status_old_value','new_value':'status_new_value'})
+                                    [['numero_cita','status_old_value','status_new_value','kpi_citas_flag_histshow_compr','kpi_citas_fecha_histshow_compr']]),
+                                on='numero_cita',
+                                how='left'
+                                )
+                        .assign(kpi_citas_flag_histshow_compr = lambda x: x.kpi_citas_flag_histshow_compr.fillna(0))
+                    )
+
+        # agregamos flags y formatos finales
+        citas_cons = (citas_cons
+                        .sort_values(by=['numero_cita','created_date','sched_date'], 
+                                    ascending = [False, False, True])
+                        .assign(
+                            sched_date = lambda x: pd.to_datetime(x.sched_start_time).dt.strftime('%Y-%m-%d'),
+                            sf_order_id = lambda x: x.sf_order_id.fillna(-1),
+                            rol = lambda x: x.rol.fillna('desconocido'),
+                            work_type_name = lambda x: x.work_type_name.fillna('desconocido'),
+                            booker_name = lambda x: x.booker_name.fillna('desconocido'),
+                            booker_equipo = lambda x: x.booker_equipo.fillna('desconocido'),
+                            id_am = lambda x: x.id_am.astype('Int64').fillna(-1),
+
+                            flag_dummy = (citas_cons.opportunity_id.notna() & citas_cons.booker_name.eq('desconocido'))*1,
+                            flag_duplicada = lambda x: (x.duplicated(subset=['id_am', 'sf_order_id', 'work_type_name', 'sched_date'], 
+                                                                    keep = False))*1,
+                            flag_cita_agendada_comprador = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1,
+                            flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1
+                                )
+                     )
         print('lineas finales en citas: ',len(citas_cons))
 
         return self._select_existing_columns(
