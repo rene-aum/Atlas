@@ -784,6 +784,7 @@ class ProcessedCrmAtlas:
 
         # etiquetamos citas dummies
         citas_cons = (citas_cons.assign(
+                                    flag_dummy = (citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna())*1,
                                     flag_cita_agendada_comprador = (~(citas_cons.opportunity_id.notna() & citas_cons.booker_name.isna())
                                                                     &(citas_cons.rol.fillna('').isin(['','comprador']) & citas_cons.work_type_name.fillna('').isin(['','cita inicial visita comprador']))
                                                                     &(~citas_cons.duplicated(subset=['work_type_name','sf_order_id','created_date']))
@@ -803,6 +804,7 @@ class ProcessedCrmAtlas:
                         on='numero_cita',
                         how='left'
                         ).assign(
+                            flag_show = (citas_cons.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
                             flag_cita_show_comprador = lambda x: (x.flag_cita_agendada_comprador & x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
                             kpi_citas_flag_histshow_compr = lambda x: x.kpi_citas_flag_histshow_compr.fillna(0),
                             sched_start_date = lambda x: pd.to_datetime(x.sched_start_time).dt.strftime('%Y-%m-%d'),
