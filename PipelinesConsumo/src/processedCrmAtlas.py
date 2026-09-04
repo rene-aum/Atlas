@@ -826,7 +826,7 @@ class ProcessedCrmAtlas:
 
                             flag_dummy = lambda x: (x.opportunity_id.notna() & x.booker_name.eq('desconocido'))*1,
                             flag_duplicada = lambda x: (x.duplicated(subset=['id_am', 'sf_order_id', 'work_type_name', 'sched_date'], 
-                                                                    keep = False))*1,
+                                                                    keep = 'first'))*1,
                             flag_cita_agendada_comprador = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1,
                             flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1
                                 )
