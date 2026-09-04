@@ -676,6 +676,14 @@ class ProcessedCrmAtlas:
             .drop_duplicates(subset="opportunity_id", keep="first")
         )
 
+        origen_credito_calculado_df = self._calcular_origen_calculado_credito(reporte, solicitudes_credito)
+
+        reporte = (reporte
+                    .merge(origen_credito_calculado_df,on='opportunity_id',how='left')
+                    .assign(opportunity_source_aux = lambda x: x['opportunity_source_calculado'])
+                    .drop(columns=['opportunity_source_aux'])
+                   )
+
         return self._select_existing_columns(
             reporte,
             self._dedupe_columns(CRM_REPORTE_OPORTUNIDADES_COLUMNS),
@@ -795,7 +803,118 @@ class ProcessedCrmAtlas:
             ) 
         return reporte
 
+    def _calcular_origen_calculado_credito(self,oportunidades,simulaciones,origen_objetivo='credito am', return_detail_only=False):
+        ops_credito = (
+            oportunidades
+            [lambda x: x.opportunity_created_date >= '2026-08-17']
+            [lambda x: x.opportunity_source == origen_objetivo]
+            [['opportunity_id', 'opportunity_source']]
+        )
+        print(
+            f'Oportunidades de tipo {origen_objetivo}: {ops_credito.shape[0]}')
 
+        sim_por_oportunidad = (simulaciones
+                               .groupby('opportunity_id', as_index=False)
+                               .agg(n_simulaciones=('simulation_name', 'nunique'))
+                               )
+        primera_sim_oportunidad = (simulaciones
+                                   .sort_values(by='created_date', ascending=False)
+                                   .groupby('opportunity_id', as_index=False)
+                                   .head(1)
+                                   [['opportunity_id', 'simulation_name', 'tipo_conclusion_flujo_credito', 'folio',
+                                       'status_solicitud', 'created_date', 'tipo_credito', 'proveedor_credito']]
+                                   )
+        ops_credito = (ops_credito
+                       .merge(sim_por_oportunidad, on='opportunity_id', how='left')
+                       .merge(primera_sim_oportunidad, on='opportunity_id', how='left')
+                       )
+
+        ops_credito['opportunity_source_aux'] = (np.where(ops_credito['n_simulaciones'].eq(1),
+                                                          np.where(ops_credito['tipo_conclusion_flujo_credito'] == 'flujo contingente',
+                                                                   'credito am contingencia',
+                                                                   'credito am api'),
+                                                          None
+                                                          ))
+        ops_credito['opportunity_source_aux_suffix'] = np.where((ops_credito.opportunity_source_aux == 'credito am api') & (ops_credito.status_solicitud.fillna('').str.contains('rechaz')),
+                                                                ' rechazado',
+                                                                np.where((ops_credito.opportunity_source_aux == 'credito am api') & ~(ops_credito.status_solicitud.str.contains('rechaz')),
+                                                                         ' aprobado', '')
+                                                                )
+
+        ops_credito['opportunity_source_calculado'] = ops_credito['opportunity_source_aux'] + \
+            ops_credito['opportunity_source_aux_suffix']
+
+        # origen calculado para oportunidades con mas de una simulacion
+
+        FECHA_SAFETY = '2100-12-01 11:00:00'
+
+        origen_multi_sim_detalle = (simulaciones
+                                    [lambda x: x.opportunity_id.isin(
+                                        ops_credito[lambda x: x.n_simulaciones > 1].opportunity_id.unique())]
+                                    [['opportunity_id', 'simulation_name', 'tipo_conclusion_flujo_credito', 'folio',
+                                        'status_solicitud', 'created_date', 'tipo_credito', 'proveedor_credito']]
+                                    .merge(oportunidades[['opportunity_id', 'fecha_asignacion', 'fecha_caso_tomado_sc', 'perf_contactado',
+                                                           'perf_bc_score', 'perf_comentarios', 'perf_fecha_primer_contacto']], on='opportunity_id', how='left')
+                                    .assign(
+                                        fecha_asignacion=lambda x: pd.to_datetime(
+                                            x.fecha_asignacion, dayfirst=True).dt.strftime('%Y-%m-%d'),
+                                        flag_raro=lambda x: (pd.to_datetime(x.created_date) > pd.to_datetime(
+                                            x.fecha_caso_tomado_sc.fillna(FECHA_SAFETY))).astype(int),
+                                        n_simulaciones=lambda x: x.groupby('opportunity_id')[
+                                            'simulation_name'].transform('nunique'),
+                                        n_flag_raro=lambda x: x.groupby('opportunity_id')[
+                                            'flag_raro'].transform('sum')
+                                    )
+                                    # QUITO LAS SOLICITUDES QUE SUCEDIERON DESPUES DEL CASO TOMADO (SINO HAY CASO TOMADO NO QUITO NINGUNA POR ESA RAZON)
+                                    # SI TODAS LAS SIMULACIONES DE UNA OPORTUNIDAD SUCEDIERON DESPUES DEL CASO TOMADO, NO QUITO NINGUNA PARA QUE LA OPORTUNIDAD NO SE QUEDE SIN SIMULACIONES PARA DECIDIR SU ORIGEN
+                                    [lambda x: (x.flag_raro != 1) | (
+                                        x.n_simulaciones == x.n_flag_raro)]
+                                    # PARA DIAGNOSTICAR, TIENE PREFERENCIA SIMULACIONES API APROBADAS, DESPUES APIS RECHAZADAS, AL ULTIMO CONTINGENCIA
+                                    # DESPUES SE ORDENA COMO SEGUNDO CRITERIO POR LA MAS NUEVA
+                                    .assign(tier_solicitud=lambda x: np.where(x.status_solicitud == 'pre aceptada', 1,
+                                                                              np.where(x.tipo_conclusion_flujo_credito == 'flujo contingente',
+                                                                                       3,
+                                                                                       np.where(
+                                                                                           x.status_solicitud == 'rechazada automatica', 2, None)
+                                                                                       )
+                                                                              ),
+                                            n_simulaciones=lambda x: x.groupby('opportunity_id')[
+                                        'simulation_name'].transform('nunique')
+                                    )
+                                    .sort_values(by=['opportunity_id', 'tier_solicitud', 'created_date'], ascending=[True, True, False])
+
+                                    )
+        if return_detail_only:
+            return origen_multi_sim_detalle
+
+        origen_multi_sim = origen_multi_sim_detalle.groupby(
+            'opportunity_id').head(1)
+
+        origen_multi_sim['opportunity_source_aux'] = (np.where(origen_multi_sim['tipo_conclusion_flujo_credito'] == 'flujo contingente',
+                                                               'credito am contingencia',
+                                                               'credito am api')
+                                                      )
+        origen_multi_sim['opportunity_source_aux_suffix'] = np.where((origen_multi_sim.opportunity_source_aux == 'credito am api') & (origen_multi_sim.status_solicitud.fillna('').str.contains('rechaz')),
+                                                                     ' rechazado',
+                                                                     np.where((origen_multi_sim.opportunity_source_aux == 'credito am api') & ~(origen_multi_sim.status_solicitud.str.contains('rechaz')),
+                                                                              ' aprobado', '')
+                                                                     )
+
+        origen_multi_sim['opportunity_source_calculado'] = origen_multi_sim['opportunity_source_aux'] + \
+            origen_multi_sim['opportunity_source_aux_suffix']
+
+        # final
+
+        final_origen_credito = (pd.concat([ops_credito[lambda x: x.n_simulaciones == 1][['opportunity_id', 'opportunity_source_calculado']],
+                                           origen_multi_sim[[
+                                               'opportunity_id', 'opportunity_source_calculado']]
+                                           ])
+                                )
+        print(
+            f'Oportunidades con opportunity_source_calculado: {final_origen_credito.shape[0]}')
+        print(
+            f'Oportunidades con opportunity_source_calculado nulo : {final_origen_credito[lambda x: x.opportunity_source_calculado.isna()].shape[0]}')
+        return final_origen_credito
 
     def _validate_sales_center_kpi_input(self, reporte_oportunidades):
         """Require the canonical opportunities report grain and KPI inputs."""
