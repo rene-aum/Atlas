@@ -738,6 +738,7 @@ class ProcessedCrmAtlas:
                                         [x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_COMPRADOR), x['work_type_name'].str.lower().isin(CRM_WORK_TYPES_VENDEDOR)],
                                         ['comprador', 'vendedor'],
                                         default=''),
+                        sched_date = lambda x: pd.to_datetime(x.sched_start_time).dt.strftime('%Y-%m-%d'),
                         created_date = lambda x: pd.to_datetime(x.created_time).dt.strftime('%Y-%m-%d')
                         )
                     )
@@ -814,7 +815,6 @@ class ProcessedCrmAtlas:
                         .sort_values(by=['numero_cita','created_date','sched_date'], 
                                     ascending = [False, False, True])
                         .assign(
-                            sched_date = lambda x: pd.to_datetime(x.sched_start_time).dt.strftime('%Y-%m-%d'),
                             sf_order_id = lambda x: x.sf_order_id.fillna(-1),
                             rol = lambda x: x.rol.fillna('desconocido'),
                             work_type_name = lambda x: x.work_type_name.fillna('desconocido'),
