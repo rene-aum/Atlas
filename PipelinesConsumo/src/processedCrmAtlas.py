@@ -681,7 +681,7 @@ class ProcessedCrmAtlas:
         reporte = (reporte
                     .merge(origen_credito_calculado_df,on='opportunity_id',how='left')
                     .assign(opportunity_source_aux = lambda x: x['opportunity_source_calculado'])
-                    .drop(columns=['opportunity_source_aux'])
+                    .drop(columns=['opportunity_source_calculado'])
                    )
 
         return self._select_existing_columns(
