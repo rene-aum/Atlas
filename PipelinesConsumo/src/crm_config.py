@@ -457,6 +457,8 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'check_in',
     'check_out',
     'fecha_reagendamiento',
-    'flag_cita_agendada_comprador',
-    'flag_cita_show_comprador'
+    'flag_show',
+    'flag_dummy'
+    # 'flag_cita_agendada_comprador',
+    # 'flag_cita_show_comprador'
 ]
