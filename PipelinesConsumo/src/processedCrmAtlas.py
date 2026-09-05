@@ -818,8 +818,8 @@ class ProcessedCrmAtlas:
                                     ascending = [False, False, True])
                         .assign(
                             sf_order_id = lambda x: x.sf_order_id.fillna(-1),
-                            rol = lambda x: x.rol.fillna('desconocido'),
-                            work_type_name = lambda x: x.work_type_name.fillna('desconocido'),
+                            rol = lambda x: x.rol.replace('','desconocido').fillna('desconocido'),
+                            work_type_name = lambda x: x.work_type_name.replace('','desconocido').fillna('desconocido'),
                             booker_name = lambda x: x.booker_name.fillna('desconocido'),
                             booker_equipo = lambda x: x.booker_equipo.fillna('desconocido'),
                             id_am = lambda x: x.id_am.astype('Int64').fillna(-1),
