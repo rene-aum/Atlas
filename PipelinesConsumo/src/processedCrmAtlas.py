@@ -1020,7 +1020,53 @@ class ProcessedCrmAtlas:
         ))
         return resultado
 
+    def add_kpis_citas_por_oportunidad(self,reporte_oportunidades,reporte_citas):
+        citas_mod = (reporte_citas
+                    .assign(flag_dummy = lambda x: (x.booker_name.isna() & x.opportunity_id.notna()).astype(int),
+                            scheduled_date = lambda x: pd.to_datetime(x.sched_start_time).dt.strftime('%Y-%m-%d'),
+                            created_date_day = lambda x: pd.to_datetime(x.created_date).dt.strftime('%Y-%m-%d'),
+                            sf_order_id = lambda x: x.sf_order_id.fillna(-1),
+                            rol = lambda x: x.rol.fillna('desconocido'),
+                            work_type_name = lambda x: x.work_type_name.fillna('desconocido'),
+                            booker_name = lambda x: x.booker_name.fillna('desconocido'),
+                            booker_equipo = lambda x: x.booker_equipo.fillna('desconocido'),
+                            id_am = lambda x: x.id_am.astype('Int64').fillna(-1),
+                            tier = lambda x: np.where(x.sf_order_id!=-1,1,0),
+                            flag_show = lambda x: (x.status.isin(['completa','en progreso'])).astype(int)
 
+                    )
+                    .sort_values(by=['rol','flag_dummy','tier','flag_show','created_date'],ascending=[True,True,False,False,False])
+                    .assign(index_duplicada = lambda x: x.groupby(['id_am','work_type_name','rol','scheduled_date','sf_order_id']).sf_order_id.transform('cumcount'),
+                            flag_duplicada = lambda x: x.index_duplicada.gt(0).astype(int)
+                            )
+                    .drop(columns=['index_duplicada'])
+                    )
+        citas_comprador_ops = (citas_mod
+                            [lambda x: x.rol.isin(['comprador','desconocido'])]
+                            [lambda x: x.work_type_name.isin(['cita inicial visita comprador','desconocido'])]
+                            [lambda x: x.flag_dummy.eq(0)]
+                            [lambda x: x.flag_duplicada==0]
+                            )
+        citas_opor_existe = (citas_comprador_ops
+                            [lambda x: x.opportunity_id.notna()]
+                            )
+        citas_proact = (citas_comprador_ops
+                        [lambda x: x.opportunity_id.isna()]
+                        )
+        citas_show = (citas_comprador_ops
+                    [lambda x: x.flag_show.eq(1)]
+                    )
+
+        
+        oportunidades_con_citas = (reporte_oportunidades
+                    .drop(columns=['numero_citas_comprador','fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','citas_completas'])
+                    .assign(flag_cita_comprador_agendada_oport = lambda x: x.opportunity_id.isin(citas_opor_existe.opportunity_id.unique()).astype(int),
+                            flag_cita_comprador_agendada_proact = lambda x: x.id_am_comprador.isin(citas_proact.id_am.unique()).astype(int),
+                            flag_cita_comprador_show = lambda x: (x.opportunity_id.isin(citas_show.opportunity_id.unique())).astype(int),
+                            )
+                    )
+        return oportunidades_con_citas
+    
     def vista_actividad_kpis_perfilamiento_sales_center(
         self, reporte_oportunidades
     ):
