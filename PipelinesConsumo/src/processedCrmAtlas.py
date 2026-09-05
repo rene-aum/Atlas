@@ -814,8 +814,6 @@ class ProcessedCrmAtlas:
 
         # agregamos flags y formatos finales
         citas_cons = (citas_cons
-                        .sort_values(by=['numero_cita','created_date','sched_date'], 
-                                    ascending = [False, False, True])
                         .assign(
                             sf_order_id = lambda x: x.sf_order_id.fillna(-1),
                             rol = lambda x: x.rol.replace('','desconocido').fillna('desconocido'),
@@ -825,10 +823,14 @@ class ProcessedCrmAtlas:
                             id_am = lambda x: x.id_am.astype('Int64').fillna(-1),
 
                             flag_dummy = lambda x: (x.opportunity_id.notna() & x.booker_name.eq('desconocido'))*1,
+                            flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
+                            flag_cita_agendada_comprador = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1
+                            )
+                          .sort_values(by=['flag_dummy', 'flag_cita_show_comprador', 'numero_cita','created_date'], 
+                                    ascending = [True, False, False, False])
+                          .assign(
                             flag_duplicada = lambda x: (x.duplicated(subset=['id_am', 'sf_order_id', 'work_type_name', 'sched_date'], 
-                                                                    keep = 'first'))*1,
-                            flag_cita_agendada_comprador = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1,
-                            flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1
+                                                                    keep = 'first'))*1
                                 )
                      )
         print('lineas finales en citas: ',len(citas_cons))
