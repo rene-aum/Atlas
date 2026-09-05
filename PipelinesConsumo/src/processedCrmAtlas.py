@@ -806,7 +806,7 @@ class ProcessedCrmAtlas:
     def _calcular_origen_calculado_credito(self,oportunidades,simulaciones,origen_objetivo='credito am', return_detail_only=False):
         ops_credito = (
             oportunidades
-            [lambda x: x.opportunity_created_date >= '2026-08-17']
+            [lambda x: x.opportunity_created_date >= '2026-07-01']
             [lambda x: x.opportunity_source == origen_objetivo]
             [['opportunity_id', 'opportunity_source']]
         )
