@@ -1055,7 +1055,7 @@ class ProcessedCrmAtlas:
 
         
         oportunidades_con_citas = (reporte_oportunidades
-                    .drop(columns=['numero_citas_comprador','fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','citas_completas'])
+                    # .drop(columns=['numero_citas_comprador','fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','citas_completas'])
                     .assign(flag_cita_comprador_agendada_oport = lambda x: x.opportunity_id.isin(citas_opor_existe.opportunity_id.unique()).astype(int),
                             flag_cita_comprador_agendada_proact = lambda x: x.id_am_comprador.isin(citas_proact.id_am.unique()).astype(int),
                             flag_cita_comprador_show = lambda x: (x.opportunity_id.isin(citas_show.opportunity_id.unique())).astype(int),
