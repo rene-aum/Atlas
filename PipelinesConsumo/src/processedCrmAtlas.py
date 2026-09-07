@@ -830,8 +830,8 @@ class ProcessedCrmAtlas:
                             flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
                             flag_cita_agendada_comprador = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1
                             )
-                          .sort_values(by=['numero_cita', 'rol', 'flag_dummy', 'sf_order_id', 'flag_cita_show_comprador', 'created_date'], 
-                                    ascending = [False, True, True, False, False, False])
+                          .sort_values(by=['rol', 'flag_dummy', 'sf_order_id', 'flag_cita_show_comprador', 'created_date'], 
+                                    ascending = [True, True, False, False, False])
                           .assign(
                             flag_duplicada = lambda x: (x.duplicated(subset=['id_am', 'work_type_name', 'rol', 'sched_date', 'sf_order_id'], 
                                                                     keep = 'first'))*1
