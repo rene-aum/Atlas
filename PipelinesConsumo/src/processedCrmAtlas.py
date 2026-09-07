@@ -502,18 +502,12 @@ class ProcessedCrmAtlas:
         citas_comprador = (
             citas[lambda x: x.opportunity_id.notna()]
             .rename(columns={"status": "status_cita"})
-            .merge(
-                pedidos[["commerce_order_id", "sf_order_id", "status"]],
-                on="commerce_order_id",
-                how="left",
-            )
-            .rename(columns={"status": "status_pedido"})
-            [lambda x: x.work_type_name.isin(CRM_WORK_TYPES_COMPRADOR)]
+            [lambda x: x.work_type_name.isin(["cita inicial visita comprador",''])| x.work_type_name.isna()]
             .sort_values(by=["opportunity_id", "created_date"], ascending=[False, False])
             .assign(
                 citas_completas=lambda x: x.status_cita.isin(
-                    CRM_STATUS_CITA_COMPLETA
-                ).multiply(1),
+                    ['completa','en progreso']
+                ).astype('int'),
                 fecha_agendada=lambda x: pd.to_datetime(
                     x.sched_start_time,
                     errors="coerce",
@@ -523,7 +517,6 @@ class ProcessedCrmAtlas:
 
         summary_citas_comprador = (
             citas_comprador
-            
             .groupby("opportunity_id", as_index=False)
             .agg(
                 numero_citas_comprador=("created_date", "nunique"),
@@ -534,9 +527,12 @@ class ProcessedCrmAtlas:
             .assign(
                 citas_completas=lambda x: x[
                     ["numero_citas_comprador", "citas_completas_comprador"]
-                ].min(axis=1)
+                ].min(axis=1),
+                flag_cita_agendada_oportunidad = lambda x: x.numero_citas_comprador.gt(0).astype('int'),
+                flag_cita_show_oportunidad = lambda x: x.citas_completas_comprador.gt(0).astype('int')
             )
             .drop(columns=["citas_completas_comprador"])
+            [['opportunity_id','flag_cita_agendada_oportunidad','fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','flag_cita_show_oportunidad']]
         )
 
         summary_pedidos = (
