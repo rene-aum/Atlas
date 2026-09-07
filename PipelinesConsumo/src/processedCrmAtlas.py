@@ -841,7 +841,7 @@ class ProcessedCrmAtlas:
         # agregamos etiqueta de agrupacion operativa y damos orden final al df
         equipo_operativo = {e:'espacios fisicos' for e in CRM_EQUIPOS_ESPACIOS} | {sc: 'sales center' for sc in CRM_EQUIPOS_SALES_CENTER}
         citas_cons = (citas_cons
-                          .assign(equipo_operativo = lambda x: x.booker_equipo.map(equipo_operativo).fillna('desconocido'))
+                          .assign(booker_equipo_operativo = lambda x: x.booker_equipo.map(equipo_operativo).fillna('desconocido'))
                           .sort_values(by='numero_cita',ascending=False)
                      )
         print('lineas finales en citas: ',len(citas_cons))
