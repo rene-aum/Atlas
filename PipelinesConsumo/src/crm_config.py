@@ -297,11 +297,16 @@ CRM_EQUIPOS_SALES_CENTER = [
     "celula credito",
 ]
 
+CRM_CRITERIOS_AGENDAMIENTO_CITAS = {
+    'rol': ['desconocido', 'comprador'],
+    'wtn': ['desconocido', 'cita inicial visita comprador']
+}
+
 CRM_CRITERIOS_SHOW_CITAS = [
     'completa',
     'en progreso'
     ]
-
+# estos de momento no se están usando pero son una versión alternativa de sacar los shows
 CRM_CRITERIOS_HISTSHOW_CITAS = [
     'completed',
     'in progress'
@@ -435,16 +440,18 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'work_type_name',
     'espacio_cita',
     'sched_start_time',
-    'sched_start_date',
     'sched_end_time',
-    'sched_end_date',
+    'sched_date',
     'booker_name',
     'booker_equipo',
+    'booker_equipo_operativo',
     'opportunity_owner',
     'opportunity_owner_id',
     'opportunity_owner_equipo',
+    'opportunity_created_date',
     'id_am',
     'telefono',
+    'fecha_asignacion',
     'perf_intencion_pago',
     'perf_bc_score',
     'opportunity_id',
@@ -457,8 +464,8 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'check_in',
     'check_out',
     'fecha_reagendamiento',
-    'flag_show',
-    'flag_dummy'
-    # 'flag_cita_agendada_comprador',
-    # 'flag_cita_show_comprador'
+    'flag_dummy',
+    'flag_duplicada',
+    'flag_cita_agendada_comprador',
+    'flag_cita_show_comprador'
 ]
