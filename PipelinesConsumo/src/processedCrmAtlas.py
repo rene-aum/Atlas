@@ -522,8 +522,8 @@ class ProcessedCrmAtlas:
                 citas_completas=lambda x: x[
                     ["numero_citas_comprador", "citas_completas_comprador"]
                 ].min(axis=1),
-                flag_cita_agendada_oportunidad = lambda x: x.numero_citas_comprador.gt(0).astype('Int64'),
-                flag_cita_show_oportunidad = lambda x: x.citas_completas_comprador.gt(0).astype('Int64')
+                flag_cita_agendada_oportunidad = lambda x: x.numero_citas_comprador.gt(0).astype('int'),
+                flag_cita_show_oportunidad = lambda x: x.citas_completas_comprador.gt(0).astype('int')
             )
             .drop(columns=["citas_completas_comprador"])
             [['opportunity_id','flag_cita_agendada_oportunidad','fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','flag_cita_show_oportunidad']]
