@@ -444,6 +444,7 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'sched_date',
     'booker_name',
     'booker_equipo',
+    'booker_equipo_operativo',
     'opportunity_owner',
     'opportunity_owner_id',
     'opportunity_owner_equipo',
