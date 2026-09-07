@@ -712,7 +712,11 @@ class ProcessedCrmAtlas:
 
         # oportunidades
         oppss_proc = (oppss_proc
-                        [['opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage']]
+                      .assign(opportunity_created_date = pd.to_datetime(oppss_proc.opportunity_created_date, format='%Y-%m-%d %H:%M').dt.strftime('%Y-%m-%d'),
+                              fecha_asignacion = pd.to_datetime(oppss_proc.fecha_asignacion, format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
+                             )
+                        [['opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
+                         'opportunity_created_date','fecha_asignacion']]
                         )
 
         # usuarios
@@ -826,10 +830,10 @@ class ProcessedCrmAtlas:
                             flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
                             flag_cita_agendada_comprador = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1
                             )
-                          .sort_values(by=['flag_dummy', 'flag_cita_show_comprador', 'numero_cita','created_date'], 
-                                    ascending = [True, False, False, False])
+                          .sort_values(by=['numero_cita', 'rol', 'flag_dummy', 'sf_order_id', 'flag_cita_show_comprador', 'created_date'], 
+                                    ascending = [False, True, True, False, False, False])
                           .assign(
-                            flag_duplicada = lambda x: (x.duplicated(subset=['id_am', 'sf_order_id', 'work_type_name', 'sched_date'], 
+                            flag_duplicada = lambda x: (x.duplicated(subset=['id_am', 'work_type_name', 'rol', 'sched_date', 'sf_order_id'], 
                                                                     keep = 'first'))*1
                                 )
                      )
