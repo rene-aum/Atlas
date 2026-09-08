@@ -876,7 +876,7 @@ class ProcessedCrmAtlas:
                                 on='numero_cita'
                                 )
                         .merge((usuarios_proc
-                                    .rename(columns = {'id':'cancelado_por_id', 'equipo':'cancelado_por_equipo'})
+                                    .rename(columns = {'id_usuario':'cancelado_por_id', 'equipo':'cancelado_por_equipo'})
                                     [['cancelado_por_id','cancelado_por_equipo']]
                                     .drop_duplicates(subset='cancelado_por_id')
                                 ),
