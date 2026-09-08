@@ -860,10 +860,10 @@ class ProcessedCrmAtlas:
                         .merge((casos_proc
                                 .loc[lambda x: x.case_subject.eq("perfilamiento contact center")]
                                 .rename(columns={
-                                            "case_id": "case_id_perfilamiento_sc",
-                                            "case_status": "case_status_perfilamiento_sc"}
+                                            "case_owner_name_perf_sc": "perf_sc_case_owner_name",
+                                            "case_owner_id_perf_sc": "perf_sc_case_owner_id"}
                                         )
-                                [["opportunity_id","case_owner_name_perf_sc","case_owner_id_perf_sc"]]
+                                [["opportunity_id","perf_sc_case_owner_name","perf_sc_case_owner_id"]]
                                 ),
                                 on="opportunity_id",
                                 how="left",
