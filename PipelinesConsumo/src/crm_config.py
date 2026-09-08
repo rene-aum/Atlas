@@ -467,7 +467,7 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'cancelado_por_id',
     'cancelado_por',
     'cancelado_por_equipo',
-    'cnacelado_por_equipo_operativo',
+    'cancelado_por_equipo_operativo',
     'check_in',
     'check_out',
     'fecha_reagendamiento',
