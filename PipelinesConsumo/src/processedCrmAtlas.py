@@ -799,11 +799,11 @@ class ProcessedCrmAtlas:
             ) 
         return reporte
 
-    def _calcular_origen_calculado_credito(self,oportunidades,simulaciones,origen_objetivo='credito am', return_detail_only=False):
+    def _calcular_origen_calculado_credito(self,oportunidades,simulaciones,origen_objetivo=['credito am'], return_detail_only=False):
         ops_credito = (
             oportunidades
             [lambda x: x.opportunity_created_date >= '2026-07-01']
-            [lambda x: x.opportunity_source == origen_objetivo]
+            [lambda x: x.opportunity_source.isin(origen_objetivo)]
             [['opportunity_id', 'opportunity_source']]
         )
         print(
@@ -831,11 +831,11 @@ class ProcessedCrmAtlas:
                                                                    'credito am api'),
                                                           None
                                                           ))
-        ops_credito['opportunity_source_aux_suffix'] = np.where((ops_credito.opportunity_source_aux == 'credito am api') & (ops_credito.status_solicitud.fillna('').str.contains('rechaz')),
-                                                                ' rechazado',
-                                                                np.where((ops_credito.opportunity_source_aux == 'credito am api') & ~(ops_credito.status_solicitud.str.contains('rechaz')),
-                                                                         ' aprobado', '')
-                                                                )
+        ops_credito['opportunity_source_aux_suffix'] = np.where((ops_credito.opportunity_source_aux == 'credito am api') & (ops_credito.status_solicitud.fillna('').str.contains('rechaz')), 
+                                                        ' rechazado',
+                                                        np.where((ops_credito.opportunity_source_aux == 'credito am api') & ~(ops_credito.status_solicitud.fillna('').str.contains('rechaz')), 
+                                                                  ' aprobado', '')
+                                                        )
 
         ops_credito['opportunity_source_calculado'] = ops_credito['opportunity_source_aux'] + \
             ops_credito['opportunity_source_aux_suffix']
@@ -903,7 +903,7 @@ class ProcessedCrmAtlas:
 
         final_origen_credito = (pd.concat([ops_credito[lambda x: x.n_simulaciones == 1][['opportunity_id', 'opportunity_source_calculado']],
                                            origen_multi_sim[[
-                                               'opportunity_id', 'opportunity_source_calculado']]
+                                               'opportunity_id', 'opportunity_source_calculado','simulation_name']]
                                            ])
                                 )
         print(
