@@ -866,7 +866,7 @@ class ProcessedCrmAtlas:
         citas_cons = (citas_cons
                         .merge((hcitas_proc
                                     .loc[lambda x: x.new_value.isin(['canceled','canceledbuyer','canceledseller'])]
-                                    .rename(columns = {'new_value':'status_cancelacion','booker_id':'cancelado_por_id','boker_name':'cancelado_por'})
+                                    .rename(columns = {'new_value':'status_cancelacion','booker_id':'cancelado_por_id','booker_name':'cancelado_por'})
                                     .assign(created_date = lambda x: pd.to_datetime(x.created_date))
                                     .sort_values(by='created_date',ascending=False)
                                     .drop_duplicates(subset='numero_cita', keep='first')
