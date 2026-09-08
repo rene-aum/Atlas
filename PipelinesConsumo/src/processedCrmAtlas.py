@@ -951,8 +951,9 @@ class ProcessedCrmAtlas:
         oportunidades.loc[
             filtro & score.ge(score_eam_min),
             "opportunity_source_aux"
-        ] = "puc directo eam"
+        ] = "apartado puc directo eam"
         return oportunidades
+    
     def _validate_sales_center_kpi_input(self, reporte_oportunidades):
         """Require the canonical opportunities report grain and KPI inputs."""
         missing_columns = self.SALES_CENTER_KPI_REQUIRED_COLUMNS.difference(
