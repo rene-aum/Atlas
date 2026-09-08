@@ -698,7 +698,8 @@ class ProcessedCrmAtlas:
         pedidos_proc,
         usuarios_proc,
         acclientes,
-        hcitas_proc
+        hcitas_proc,
+        casos_proc
     ):
         print('lineas iniciales en citas: ',len(citas_proc))
         # cuentas
@@ -735,6 +736,11 @@ class ProcessedCrmAtlas:
                         .rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
                         .reset_index(drop=True)
                         )
+
+        # casos (para perfilamiento owner)
+        casos_proc = (casos_proc
+                        .loc[lambda x: x.opportunity_id.notna()]
+                    )
 
         # generamos reporte consumible de citas
         citas_cons = (citas_proc.copy()
@@ -848,6 +854,22 @@ class ProcessedCrmAtlas:
                           .assign(booker_equipo_operativo = lambda x: x.booker_equipo.map(equipo_operativo).fillna('desconocido'))
                           .sort_values(by='numero_cita',ascending=False)
                      )
+
+        # agrega etiqueta de owner de caso de perfilamiento_sc
+        citas_cons = (citas_cons
+                        .merge((casos_proc
+                                .loc[lambda x: x.case_subject.eq("perfilamiento contact center")]
+                                .rename(columns={
+                                            "case_owner_name_perf_sc": "perf_sc_case_owner_name",
+                                            "case_owner_id_perf_sc": "perf_sc_case_owner_id"}
+                                        )
+                                [["opportunity_id","perf_sc_case_owner_name","perf_sc_case_owner_id"]]
+                                ),
+                                on="opportunity_id",
+                                how="left",
+                        )
+                    )
+
         print('lineas finales en citas: ',len(citas_cons))
 
         return self._select_existing_columns(
