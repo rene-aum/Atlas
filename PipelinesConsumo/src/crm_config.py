@@ -458,6 +458,8 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'fecha_asignacion',
     'perf_intencion_pago',
     'perf_bc_score',
+    'case_owner_name_perf_sc',
+    'case_owner_id_perf_sc',
     'booker_name',
     'booker_equipo',
     'booker_equipo_operativo',
