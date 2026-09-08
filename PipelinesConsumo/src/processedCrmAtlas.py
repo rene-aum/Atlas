@@ -799,7 +799,7 @@ class ProcessedCrmAtlas:
             ) 
         return reporte
 
-    def _calcular_origen_calculado_credito(self,oportunidades,simulaciones,origen_objetivo=['credito am'], return_detail_only=False):
+    def _calcular_origen_calculado_credito(self,oportunidades,simulaciones,origen_objetivo=['credito am','apartado am'], return_detail_only=False):
         ops_credito = (
             oportunidades
             [lambda x: x.opportunity_created_date >= '2026-07-01']
@@ -901,7 +901,7 @@ class ProcessedCrmAtlas:
 
         # final
 
-        final_origen_credito = (pd.concat([ops_credito[lambda x: x.n_simulaciones == 1][['opportunity_id', 'opportunity_source_calculado']],
+        final_origen_credito = (pd.concat([ops_credito[lambda x: x.n_simulaciones == 1][['opportunity_id', 'opportunity_source_calculado','simulation_name']],
                                            origen_multi_sim[[
                                                'opportunity_id', 'opportunity_source_calculado','simulation_name']]
                                            ])
