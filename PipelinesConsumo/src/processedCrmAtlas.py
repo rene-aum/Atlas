@@ -885,6 +885,11 @@ class ProcessedCrmAtlas:
                                 how = 'left',
                                 on='cancelado_por_id'
                                 )
+                          .assign(status_cancelacion = lambda x: x.status_cancelacion.mask(~x.status.str.contains('cancelado', na=False)),
+                                  cancelado_por_id = lambda x: x.cancelado_por_id.mask(~x.status.str.contains('cancelado', na=False)),
+                                  cancelado_por = lambda x: x.cancelado_por.mask(~x.status.str.contains('cancelado', na=False)),
+                                  cancelado_por_equipo = lambda x: x.cancelado_por_equipo.mask(~x.status.str.contains('cancelado', na=False))
+                                 )
                         )
 
         # agregamos etiquetas de agrupacion operativa y damos orden final al df
