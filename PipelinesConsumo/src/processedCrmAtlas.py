@@ -847,13 +847,6 @@ class ProcessedCrmAtlas:
                                                                     keep = 'first'))*1
                                 )
                      )
-        
-        # agregamos etiqueta de agrupacion operativa y damos orden final al df
-        equipo_operativo = {e:'espacios fisicos' for e in CRM_EQUIPOS_ESPACIOS} | {sc: 'sales center' for sc in CRM_EQUIPOS_SALES_CENTER}
-        citas_cons = (citas_cons
-                          .assign(booker_equipo_operativo = lambda x: x.booker_equipo.map(equipo_operativo).fillna('desconocido'))
-                          .sort_values(by='numero_cita',ascending=False)
-                     )
 
         # agrega etiqueta de owner de caso de perfilamiento_sc
         citas_cons = (citas_cons
@@ -869,6 +862,38 @@ class ProcessedCrmAtlas:
                                 how="left",
                         )
                     )
+        # agrega etiquetas de quien canceló la cita
+        citas_cons = (citas_cons
+                        .merge((hcitas_proc
+                                    .loc[lambda x: x.new_value.isin(['canceled','canceledbuyer','canceledseller'])]
+                                    .rename(columns = {'new_value':'status_cancelacion','booker_id':'cancelado_por_id','booker_name':'cancelado_por'})
+                                    .assign(created_date = lambda x: pd.to_datetime(x.created_date))
+                                    .sort_values(by='created_date',ascending=False)
+                                    .drop_duplicates(subset='numero_cita', keep='first')
+                                    [['numero_cita','status_cancelacion','cancelado_por_id','cancelado_por']]
+                                ),
+                                how = 'left',
+                                on='numero_cita'
+                                )
+                        .merge((usuarios_proc
+                                    .rename(columns = {'id_usuario':'cancelado_por_id', 'equipo':'cancelado_por_equipo'})
+                                    [['cancelado_por_id','cancelado_por_equipo']]
+                                    .drop_duplicates(subset='cancelado_por_id')
+                                ),
+                                how = 'left',
+                                on='cancelado_por_id'
+                                )
+                        )
+
+        # agregamos etiquetas de agrupacion operativa y damos orden final al df
+        equipo_operativo = {e:'espacios fisicos' for e in CRM_EQUIPOS_ESPACIOS} | {sc: 'sales center' for sc in CRM_EQUIPOS_SALES_CENTER}
+        citas_cons = (citas_cons
+                          .assign(booker_equipo_operativo = lambda x: x.booker_equipo.map(equipo_operativo).fillna('desconocido'),
+                                cancelado_por_equipo_operativo = lambda x: x.cancelado_por_equipo.map(equipo_operativo).fillna('desconocido')
+                                )
+                          .sort_values(by='numero_cita',ascending=False)
+                     )
+
 
         print('lineas finales en citas: ',len(citas_cons))
 
