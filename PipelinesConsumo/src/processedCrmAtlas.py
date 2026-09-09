@@ -678,13 +678,15 @@ class ProcessedCrmAtlas:
             .drop_duplicates(subset="opportunity_id", keep="first")
         )
 
-        origen_credito_calculado_df = self._calcular_origen_calculado_credito(reporte, solicitudes_credito)
+        origen_credito_calculado_df = self._calcular_origen_calculado_credito(reporte, solicitudes_credito,origen_objetivo=['credito am', 'apartado am'])
 
         reporte = (reporte
                     .merge(origen_credito_calculado_df,on='opportunity_id',how='left')
                     .assign(opportunity_source_aux = lambda x: x['opportunity_source_calculado'])
                     .drop(columns=['opportunity_source_calculado'])
                    )
+
+        reporte = self._calcular_opportunity_source_aux_apartados_sin_simulacion(reporte)
 
         return self._select_existing_columns(
             reporte,
@@ -922,11 +924,11 @@ class ProcessedCrmAtlas:
             ) 
         return reporte
 
-    def _calcular_origen_calculado_credito(self,oportunidades,simulaciones,origen_objetivo='credito am', return_detail_only=False):
+    def _calcular_origen_calculado_credito(self,oportunidades,simulaciones,origen_objetivo=['credito am','apartado am'], return_detail_only=False):
         ops_credito = (
             oportunidades
             [lambda x: x.opportunity_created_date >= '2026-07-01']
-            [lambda x: x.opportunity_source == origen_objetivo]
+            [lambda x: x.opportunity_source.isin(origen_objetivo)]
             [['opportunity_id', 'opportunity_source']]
         )
         print(
@@ -954,11 +956,11 @@ class ProcessedCrmAtlas:
                                                                    'credito am api'),
                                                           None
                                                           ))
-        ops_credito['opportunity_source_aux_suffix'] = np.where((ops_credito.opportunity_source_aux == 'credito am api') & (ops_credito.status_solicitud.fillna('').str.contains('rechaz')),
-                                                                ' rechazado',
-                                                                np.where((ops_credito.opportunity_source_aux == 'credito am api') & ~(ops_credito.status_solicitud.str.contains('rechaz')),
-                                                                         ' aprobado', '')
-                                                                )
+        ops_credito['opportunity_source_aux_suffix'] = np.where((ops_credito.opportunity_source_aux == 'credito am api') & (ops_credito.status_solicitud.fillna('').str.contains('rechaz')), 
+                                                        ' rechazado',
+                                                        np.where((ops_credito.opportunity_source_aux == 'credito am api') & ~(ops_credito.status_solicitud.fillna('').str.contains('rechaz')), 
+                                                                  ' aprobado', '')
+                                                        )
 
         ops_credito['opportunity_source_calculado'] = ops_credito['opportunity_source_aux'] + \
             ops_credito['opportunity_source_aux_suffix']
@@ -1024,9 +1026,9 @@ class ProcessedCrmAtlas:
 
         # final
 
-        final_origen_credito = (pd.concat([ops_credito[lambda x: x.n_simulaciones == 1][['opportunity_id', 'opportunity_source_calculado']],
+        final_origen_credito = (pd.concat([ops_credito[lambda x: x.n_simulaciones == 1][['opportunity_id', 'opportunity_source_calculado','simulation_name']],
                                            origen_multi_sim[[
-                                               'opportunity_id', 'opportunity_source_calculado']]
+                                               'opportunity_id', 'opportunity_source_calculado','simulation_name']]
                                            ])
                                 )
         print(
@@ -1034,7 +1036,47 @@ class ProcessedCrmAtlas:
         print(
             f'Oportunidades con opportunity_source_calculado nulo : {final_origen_credito[lambda x: x.opportunity_source_calculado.isna()].shape[0]}')
         return final_origen_credito
+    
+    def _calcular_opportunity_source_aux_apartados_sin_simulacion(self, oportunidades):
+        score_no_apto_max = 569
+        score_kuna_min, score_kuna_max = 570,649
+        score_bbva_min, score_bbva_max = 650,699
+        score_eam_min = 700
 
+        filtro = (
+            # oportunidades.opportunity_created_date.ge("2026-08-17")
+            oportunidades.opportunity_source.eq("apartado am")
+            & oportunidades.perf_contactado.eq("si")
+            & oportunidades.perf_interesado.eq("si")
+            & oportunidades.perf_intencion_pago.isin(['Crédito','Credito','credito'])
+            & oportunidades.perf_bc_score.notna()
+            & oportunidades.opportunity_source_aux.isna()
+        )
+
+
+        score = pd.to_numeric(oportunidades.perf_bc_score,errors='coerce').copy()
+
+        oportunidades.loc[
+            filtro & score.le(score_no_apto_max),
+            "opportunity_source_aux"
+        ] = "apartado puc no apto"
+
+        oportunidades.loc[
+            filtro & score.between(score_kuna_min, score_kuna_max, inclusive="both"),
+            "opportunity_source_aux"
+        ] = "apartado puc viable kuna"
+
+        oportunidades.loc[
+            filtro & score.between(score_bbva_min, score_bbva_max, inclusive="both"),
+            "opportunity_source_aux"
+        ] = "apartado puc viable bbva"
+
+        oportunidades.loc[
+            filtro & score.ge(score_eam_min),
+            "opportunity_source_aux"
+        ] = "apartado puc directo eam"
+        return oportunidades
+    
     def _validate_sales_center_kpi_input(self, reporte_oportunidades):
         """Require the canonical opportunities report grain and KPI inputs."""
         missing_columns = self.SALES_CENTER_KPI_REQUIRED_COLUMNS.difference(
