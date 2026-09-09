@@ -910,7 +910,6 @@ class ProcessedCrmAtlas:
         )
 
 
-
     def proc_reporte_simulaciones(self,solicitudes_credito):
         return self._select_existing_columns(
             solicitudes_credito,
