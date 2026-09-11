@@ -421,6 +421,8 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "n_simulaciones_preaceptadas", 
     "n_simulaciones_contingencia",
     "flag_cita_agendada_oportunidad",
+    "flag_cita_sin_pedido_agendada",
+    "flag_cita_sin_pedido_show",
     "fecha_primera_cita_visita_comp",
     "fecha_ultima_cita_visita_comp",
     "flag_cita_show_oportunidad",

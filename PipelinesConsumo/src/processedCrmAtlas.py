@@ -490,15 +490,6 @@ class ProcessedCrmAtlas:
             ]
         )
 
-        origen_credito_aux = (
-            solicitudes_credito
-            .sort_values(by=["opportunity_id", "created_date"], ascending=[True, True])
-            .drop_duplicates(subset="opportunity_id", keep="first")
-            [lambda x: x.tipo_conclusion_flujo_credito == 'flujo contingente']
-            .assign(opportunity_source_aux="credito am contingencia")
-            [["opportunity_id", "opportunity_source_aux"]]
-        )
-
         citas_comprador = (
             citas[lambda x: x.opportunity_id.notna()]
             .rename(columns={"status": "status_cita"})
@@ -506,7 +497,7 @@ class ProcessedCrmAtlas:
             .sort_values(by=["opportunity_id", "created_date"], ascending=[False, False])
             .assign(
                 citas_completas=lambda x: x.status_cita.isin(
-                    ['completa','en progreso']
+                    [CRM_CRITERIOS_SHOW_CITAS]
                 ).astype('int'),
                 fecha_agendada=lambda x: pd.to_datetime(
                     x.sched_start_time,
@@ -514,6 +505,16 @@ class ProcessedCrmAtlas:
                 ).dt.strftime("%Y-%m-%d").fillna(''),
             )
         )
+        citas_comprador_proactivas = (citas
+                                      .merge(pedidos[['commerce_order_id','sf_order_id']].drop_duplicates(),on='commerce_order_id',how='left')
+                                        [lambda x: x.opportunity_id.isna()]
+                                        [lambda x: x.work_type_name.isin(["cita inicial visita comprador",''])| x.work_type_name.isna()]
+                                        [lambda x: x.sf_order_id.isna()]
+                                        [['id_am','sf_order_id','status']].drop_duplicates()
+                                      )
+        citas_comprador_proactivas_show = (citas_comprador_proactivas
+                                           [lambda x: x.status.isin(CRM_CRITERIOS_SHOW_CITAS)]
+                                      )
 
         summary_citas_comprador = (
             citas_comprador
@@ -552,8 +553,9 @@ class ProcessedCrmAtlas:
         )
         summary_solicitudes = (solicitudes_credito
                     .assign(flag_contingencia=lambda x: x.tipo_conclusion_flujo_credito.eq('flujo contingente').multiply(1),
-                            flag_folio = lambda x: x.folio.notna().multiply(1),
-                            flag_aceptada = lambda x: (~x.status_solicitud.str.startswith('recha') & x.flag_folio.eq(1)).multiply(1))
+                            flag_folio = lambda x: (x.folio.notna()& x.folio.gt(0)).multiply(1),
+                            flag_aceptada = lambda x: (x.status_solicitud.fillna('').str.contains('acept') & x.flag_folio.eq(1)).multiply(1)
+                            )
                     .groupby('opportunity_id',as_index = False)
                     .agg(
                         n_simulaciones_credito=('simulation_name','nunique'),
@@ -601,7 +603,7 @@ class ProcessedCrmAtlas:
             .rename(columns={'equipo': 'opportunity_owner_equipo',
                              })
             .drop(columns=["id"])
-            .merge(origen_credito_aux, on="opportunity_id", how="left")
+            # .merge(origen_credito_aux, on="opportunity_id", how="left")
             .merge(
                 casos_perfilamiento_sc[
                     [
@@ -646,15 +648,8 @@ class ProcessedCrmAtlas:
             .merge(summary_pedidos, on="opportunity_id", how="left")
             .merge(summary_solicitudes, on="opportunity_id", how="left")
             .merge(summary_citas_comprador, on="opportunity_id", how="left")
-            .assign(
-                opportunity_source_aux_1=lambda x: np.where(
-                    (x.opportunity_source == ("credito am"))
-                    & x.opportunity_source_aux.isna(),
-                    "credito am api",
-                    x.opportunity_source_aux,
-                ),
-                opportunity_source_aux=lambda x: np.where(x.opportunity_source == (
-                    "apartado am"), np.nan, x.opportunity_source_aux_1),
+            .assign(flag_cita_sin_pedido_agendada = lambda x: x.id_am_comprador.isin(citas_comprador_proactivas.id_am.unique()).astype(int),
+                    flag_cita_sin_pedido_show = lambda x: x.id_am_comprador.isin(citas_comprador_proactivas_show.id_am.unique()).astype(int),
                 flag_caso_tomado_perf_sc=lambda x: x.fecha_caso_tomado_sc.notna()
                 * 1,
                 flag_perfilamento_credito=lambda x: (
@@ -665,7 +660,6 @@ class ProcessedCrmAtlas:
             )
             .merge(historico_oportunidades_mod, on='opportunity_id', how='left')
             .merge(primer_booker_df, on='opportunity_id', how='left')
-            .drop(columns=["opportunity_source_aux_1"])
         )
 
         reporte = (
@@ -686,7 +680,7 @@ class ProcessedCrmAtlas:
                     .drop(columns=['opportunity_source_calculado'])
                    )
 
-        reporte = self._calcular_opportunity_source_aux_apartados_sin_simulacion(reporte)
+        reporte = self._calcular_opportunity_source_aux_apartados_sin_simulacion(reporte) # puc
 
         return self._select_existing_columns(
             reporte,
@@ -1141,9 +1135,9 @@ class ProcessedCrmAtlas:
                 )
             ).astype(int),
             kpi_sales_center_fecha_asignado=lambda x: (
-                x.fecha_asignacion.fillna(fecha_caso_tomado).fillna(
-                    fecha_primer_contacto
-                )
+                x.fecha_asignacion
+                # .fillna(fecha_caso_tomado).fillna(
+                #     fecha_primer_contacto)
             ),
             kpi_sales_center_flag_contactado=lambda x: (
                 x.kpi_sales_center_flag_asignado.eq(1)
@@ -1151,18 +1145,9 @@ class ProcessedCrmAtlas:
             ).astype(int),
             kpi_sales_center_flag_intento_contacto=lambda x: (
                 x.kpi_sales_center_flag_asignado.eq(1)
-                & fecha_primer_contacto.notna()
+                # & fecha_primer_contacto.notna()
             ).astype(int),
-            kpi_sales_center_fecha_contactado=lambda x: pd.Series(
-                np.where(
-                    x.kpi_sales_center_flag_contactado.eq(1)
-                    | x.kpi_sales_center_flag_intento_contacto.eq(1),
-                    fecha_primer_contacto.fillna(fecha_caso_tomado),
-                    np.nan,
-                ),
-                index=x.index,
-                dtype="object",
-            ),
+            kpi_sales_center_fecha_contactado=fecha_caso_tomado,
             kpi_sales_center_flag_interesado=lambda x: (
                 x.kpi_sales_center_flag_asignado.eq(1)
                 & x.kpi_sales_center_flag_contactado.eq(1)
