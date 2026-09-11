@@ -515,6 +515,7 @@ class ProcessedCrmAtlas:
             )
         )
         citas_comprador_proactivas = (citas
+                                      .merge(pedidos[['commerce_order_id','sf_order_id']].drop_duplicates(),on='commerce_order_id',how='left')
                                         [lambda x: x.opportunity_id.isna()]
                                         [lambda x: x.work_type_name.isin(["cita inicial visita comprador",''])| x.work_type_name.isna()]
                                         [lambda x: x.sf_order_id.isna()]
