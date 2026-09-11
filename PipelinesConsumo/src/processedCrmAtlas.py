@@ -490,15 +490,6 @@ class ProcessedCrmAtlas:
             ]
         )
 
-        # origen_credito_aux = (
-        #     solicitudes_credito
-        #     .sort_values(by=["opportunity_id", "created_date"], ascending=[True, True])
-        #     .drop_duplicates(subset="opportunity_id", keep="first")
-        #     [lambda x: x.tipo_conclusion_flujo_credito == 'flujo contingente']
-        #     .assign(opportunity_source_aux="credito am contingencia")
-        #     [["opportunity_id", "opportunity_source_aux"]]
-        # )
-
         citas_comprador = (
             citas[lambda x: x.opportunity_id.notna()]
             .rename(columns={"status": "status_cita"})
@@ -659,14 +650,6 @@ class ProcessedCrmAtlas:
             .merge(summary_citas_comprador, on="opportunity_id", how="left")
             .assign(flag_cita_sin_pedido_agendada = lambda x: x.id_am_comprador.isin(citas_comprador_proactivas.id_am.unique()).astype(int),
                     flag_cita_sin_pedido_show = lambda x: x.id_am_comprador.isin(citas_comprador_proactivas_show.id_am.unique()).astype(int),
-                # opportunity_source_aux_1=lambda x: np.where(
-                #     (x.opportunity_source == ("credito am"))
-                #     & x.opportunity_source_aux.isna(),
-                #     "credito am api",
-                #     x.opportunity_source_aux,
-                # ),
-                # opportunity_source_aux=lambda x: np.where(x.opportunity_source == (
-                #     "apartado am"), np.nan, x.opportunity_source_aux_1),
                 flag_caso_tomado_perf_sc=lambda x: x.fecha_caso_tomado_sc.notna()
                 * 1,
                 flag_perfilamento_credito=lambda x: (
@@ -677,7 +660,6 @@ class ProcessedCrmAtlas:
             )
             .merge(historico_oportunidades_mod, on='opportunity_id', how='left')
             .merge(primer_booker_df, on='opportunity_id', how='left')
-            # .drop(columns=["opportunity_source_aux_1"])
         )
 
         reporte = (
@@ -698,7 +680,7 @@ class ProcessedCrmAtlas:
                     .drop(columns=['opportunity_source_calculado'])
                    )
 
-        reporte = self._calcular_opportunity_source_aux_apartados_sin_simulacion(reporte)
+        reporte = self._calcular_opportunity_source_aux_apartados_sin_simulacion(reporte) # puc
 
         return self._select_existing_columns(
             reporte,
