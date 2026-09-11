@@ -659,14 +659,14 @@ class ProcessedCrmAtlas:
             .merge(summary_citas_comprador, on="opportunity_id", how="left")
             .assign(flag_cita_sin_pedido_agendada = lambda x: x.id_am_comprador.isin(citas_comprador_proactivas.id_am.unique()).astype(int),
                     flag_cita_sin_pedido_show = lambda x: x.id_am_comprador.isin(citas_comprador_proactivas_show.id_am.unique()).astype(int),
-                opportunity_source_aux_1=lambda x: np.where(
-                    (x.opportunity_source == ("credito am"))
-                    & x.opportunity_source_aux.isna(),
-                    "credito am api",
-                    x.opportunity_source_aux,
-                ),
-                opportunity_source_aux=lambda x: np.where(x.opportunity_source == (
-                    "apartado am"), np.nan, x.opportunity_source_aux_1),
+                # opportunity_source_aux_1=lambda x: np.where(
+                #     (x.opportunity_source == ("credito am"))
+                #     & x.opportunity_source_aux.isna(),
+                #     "credito am api",
+                #     x.opportunity_source_aux,
+                # ),
+                # opportunity_source_aux=lambda x: np.where(x.opportunity_source == (
+                #     "apartado am"), np.nan, x.opportunity_source_aux_1),
                 flag_caso_tomado_perf_sc=lambda x: x.fecha_caso_tomado_sc.notna()
                 * 1,
                 flag_perfilamento_credito=lambda x: (
@@ -677,7 +677,7 @@ class ProcessedCrmAtlas:
             )
             .merge(historico_oportunidades_mod, on='opportunity_id', how='left')
             .merge(primer_booker_df, on='opportunity_id', how='left')
-            .drop(columns=["opportunity_source_aux_1"])
+            # .drop(columns=["opportunity_source_aux_1"])
         )
 
         reporte = (
