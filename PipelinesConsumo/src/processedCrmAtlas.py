@@ -1130,9 +1130,9 @@ class ProcessedCrmAtlas:
             perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago),
             kpi_sales_center_flag_asignado=lambda x: (
                 x.case_owner_equipo_perf_sc.isin(equipos_sales_center)
-                | x.equipo_asesor_caso_tomado_perf_sc.isin(
-                    equipos_sales_center
-                )
+                # | x.equipo_asesor_caso_tomado_perf_sc.isin(
+                #     equipos_sales_center
+                # )
             ).astype(int),
             kpi_sales_center_fecha_asignado=lambda x: (
                 x.fecha_asignacion
