@@ -795,9 +795,9 @@ class ProcessedCrmAtlas:
         citas_cons = (citas_cons
                         .merge((hcitas_proc
                                     .loc[lambda x: x.field.eq('created')]
-                                    .loc[lambda x: x.created_by.notna()]
+                                    .loc[lambda x: x.booker_name.notna()]
                                     .drop_duplicates('numero_cita')
-                                    .rename(columns = {'created_by_id':'hcita_created_by_id','created_by':'hcita_created_by'})
+                                    .rename(columns = {'booker_id':'hcita_created_by_id','booker_name':'hcita_created_by'})
                                     [['numero_cita','hcita_created_by_id','hcita_created_by']]
                                 ),
                                 how = 'left',
