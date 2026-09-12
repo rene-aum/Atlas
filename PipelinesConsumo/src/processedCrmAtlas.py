@@ -805,7 +805,7 @@ class ProcessedCrmAtlas:
                                 )
                         .assign(
                             booker_id = lambda x: x.booker_id.fillna(x.hcita_created_by_id),
-                            booker_name = lambda x: pcrm._normalize_series(x.booker_name.fillna(x.hcita_created_by)).str.upper()
+                            booker_name = lambda x: self._normalize_series(x.booker_name.fillna(x.hcita_created_by)).str.upper()
                             )
                         .drop(columns = ['hcita_created_by_id','hcita_created_by'])
                     )
