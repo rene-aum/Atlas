@@ -728,7 +728,6 @@ class ProcessedCrmAtlas:
 
         # historico de citas
         hcitas_proc = (hcitas_proc
-                        [lambda x: x['field']=='status']
                         .rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
                         .reset_index(drop=True)
                         )
@@ -782,6 +781,7 @@ class ProcessedCrmAtlas:
         # agregamos booker y booker id
         citas_cons = (citas_cons
                         .merge((hcitas_proc
+                                    .loc[lambda x: x['field']=='status']
                                     .loc[lambda x: x['old_value'].isna()]
                                     .loc[lambda x: x['new_value']=='scheduled']
                                     .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
@@ -790,6 +790,24 @@ class ProcessedCrmAtlas:
                                 how = 'left',
                                 on = 'numero_cita'
                                 )
+                    )
+        # completamos bookers vacíos con createdBy en historico
+        citas_cons = (citas_cons
+                        .merge((hcitas_proc
+                                    .loc[lambda x: x.field.eq('created')]
+                                    .loc[lambda x: x.booker_name.notna()]
+                                    .drop_duplicates('numero_cita')
+                                    .rename(columns = {'booker_id':'hcita_created_by_id','booker_name':'hcita_created_by'})
+                                    [['numero_cita','hcita_created_by_id','hcita_created_by']]
+                                ),
+                                how = 'left',
+                                on = 'numero_cita'
+                                )
+                        .assign(
+                            booker_id = lambda x: x.booker_id.fillna(x.hcita_created_by_id),
+                            booker_name = lambda x: self._normalize_series(x.booker_name.fillna(x.hcita_created_by)).str.upper()
+                            )
+                        .drop(columns = ['hcita_created_by_id','hcita_created_by'])
                     )
 
         # agregamos equipo del owner y del booker a partir del catálogo de usuarios
@@ -811,6 +829,7 @@ class ProcessedCrmAtlas:
         # agregamos etiqueta de show y status previo usando específicamente el historico; por ahora no se usa pero es una alternativa
         citas_cons = (citas_cons
                         .merge((hcitas_proc
+                                    .loc[lambda x: x['field']=='status']
                                     .loc[lambda x: x.new_value.isin(CRM_CRITERIOS_HISTSHOW_CITAS)]
                                     .assign(kpi_citas_flag_histshow_compr = 1)
                                     .drop_duplicates(subset=['numero_cita'])
@@ -861,6 +880,7 @@ class ProcessedCrmAtlas:
         # agrega etiquetas de quien canceló la cita
         citas_cons = (citas_cons
                         .merge((hcitas_proc
+                                    .loc[lambda x: x['field']=='status']
                                     .loc[lambda x: x.new_value.isin(['canceled','canceledbuyer','canceledseller'])]
                                     .rename(columns = {'new_value':'status_cancelacion','booker_id':'cancelado_por_id','booker_name':'cancelado_por'})
                                     .assign(created_date = lambda x: pd.to_datetime(x.created_date))
