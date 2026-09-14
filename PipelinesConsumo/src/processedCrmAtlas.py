@@ -804,6 +804,7 @@ class ProcessedCrmAtlas:
                                 on = 'numero_cita'
                                 )
                         .assign(
+                            flag_booker_origen_nulo = lambda x: (x.booker_id.isna())*1,
                             booker_id = lambda x: x.booker_id.fillna(x.hcita_created_by_id),
                             booker_name = lambda x: self._normalize_series(x.booker_name.fillna(x.hcita_created_by)).str.upper()
                             )
@@ -851,7 +852,7 @@ class ProcessedCrmAtlas:
                             booker_equipo = lambda x: x.booker_equipo.fillna('desconocido'),
                             id_am = lambda x: x.id_am.astype('Int64').fillna(-1),
 
-                            flag_dummy = lambda x: (x.opportunity_id.notna() & x.booker_name.eq('desconocido'))*1,
+                            flag_dummy = lambda x: (x.opportunity_id.notna() & x.flag_booker_origen_nulo.eq(1))*1,
                             flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
                             flag_cita_agendada_comprador = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1
                             )
