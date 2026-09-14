@@ -476,5 +476,6 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'flag_dummy',
     'flag_duplicada',
     'flag_cita_agendada_comprador',
-    'flag_cita_show_comprador'
+    'flag_cita_show_comprador',
+    'flag_booker_nulo'
 ]
