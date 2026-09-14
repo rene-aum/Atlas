@@ -804,7 +804,7 @@ class ProcessedCrmAtlas:
                                 on = 'numero_cita'
                                 )
                         .assign(
-                            flag_booker_origen_nulo = lambda x: x.booker_id.isna(),
+                            flag_booker_origen_nulo = lambda x: (x.booker_id.isna())*1,
                             booker_id = lambda x: x.booker_id.fillna(x.hcita_created_by_id),
                             booker_name = lambda x: self._normalize_series(x.booker_name.fillna(x.hcita_created_by)).str.upper()
                             )
