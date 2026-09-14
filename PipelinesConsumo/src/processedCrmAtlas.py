@@ -919,10 +919,11 @@ class ProcessedCrmAtlas:
 
         print('lineas finales en citas: ',len(citas_cons))
 
-        return self._select_existing_columns(
-            citas_cons,
-            self._dedupe_columns(CRM_REPORTE_CITAS_COLUMNS),
-        )
+        return citas_cons
+        # self._select_existing_columns(
+        #     citas_cons,
+        #     self._dedupe_columns(CRM_REPORTE_CITAS_COLUMNS),
+        # )
 
 
     def proc_reporte_simulaciones(self,solicitudes_credito):
