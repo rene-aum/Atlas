@@ -1195,7 +1195,7 @@ class ProcessedCrmAtlas:
                 x.kpi_sales_center_flag_perfilado.eq(1)
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
-            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) & x.perf_comentarios.str.contains('no apto')),
+            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) & x.perf_comentarios.str.contains('no apto')).astype(int),
             kpi_sales_center_flag_puc_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
                                                          & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
                                                          )
@@ -1208,7 +1208,7 @@ class ProcessedCrmAtlas:
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
                                                           ).astype(int),
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
-            kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')),
+            kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
             kpi_sales_center_puc_resultado=lambda x: np.select(
                                                             [
                                                                 x.kpi_sales_center_flag_puc_no_apto.eq(1),
