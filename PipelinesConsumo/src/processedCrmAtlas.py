@@ -1204,7 +1204,7 @@ class ProcessedCrmAtlas:
             aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('glomo')| x.perf_comentarios.str.contains('api'))
                                                             & (x.perf_comentarios.str.contains('aprobado') | x.perf_comentarios.str.contains('bado'))
                                                           ),
-            kpi_sales_center_flag_puc_bbva_aprobado = lambda x:(x.kpi_sales_center_kuna_aprobado.eq(0) 
+            kpi_sales_center_flag_puc_bbva_aprobado = lambda x:(x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0) 
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
                                                           ).astype(int),
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
