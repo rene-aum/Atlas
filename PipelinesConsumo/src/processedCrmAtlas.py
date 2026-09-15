@@ -1219,6 +1219,11 @@ class ProcessedCrmAtlas:
                 & x.kpi_sales_center_flag_contactado.eq(1)
                 & x.perf_interesado.eq('si')
             ).astype(int),
+            kpi_sales_center_flag_proceso_perfilamiento = lambda x: (
+                x.kpi_sales_center_flag_asignado.eq(1)
+                & x.kpi_sales_center_flag_contactado.eq(1)
+                & x.perf_interesado.eq('en proceso de perfilamiento')
+            ).astype(int),
             kpi_sales_center_flag_perfilado=lambda x: (
                 x.kpi_sales_center_flag_asignado.eq(1)
                 & x.kpi_sales_center_flag_contactado.eq(1)
@@ -1233,17 +1238,51 @@ class ProcessedCrmAtlas:
                 x.kpi_sales_center_flag_perfilado.eq(1)
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
-            kpi_sales_center_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
-                                                         & x.perf_comentarios.str.contains('aprobado'))
-                                                        # | (x.tipo_credito=='credito subprime')
+            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) & x.perf_comentarios.str.contains('no apto')).astype(int),
+            kpi_sales_center_flag_puc_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
+                                                         & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
+                                                         )
                                                          ).astype(int),
+ 
             aux_aprobado_1 = lambda x: x.opportunity_source_aux.isin(['credito am api aprobado']),
-            aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') |x.perf_comentarios.str.contains('glomo'))
-                                                            & (x.perf_comentarios.str.contains('aprobado'))
+            aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('glomo')| x.perf_comentarios.str.contains('api'))
+                                                            & (x.perf_comentarios.str.contains('aprobado') | x.perf_comentarios.str.contains('bado'))
                                                           ),
-            kpi_sales_center_bbva_aprobado = lambda x:(x.kpi_sales_center_kuna_aprobado.eq(0) 
+            kpi_sales_center_flag_puc_bbva_aprobado = lambda x:(x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0) 
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
-                                                          ).astype(int)
+                                                          ).astype(int),
+            kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
+            kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
+            kpi_sales_center_puc_resultado=lambda x: (
+                                                        pd.Series(
+                                                            np.select(
+                                                                [
+                                                                    x.kpi_sales_center_flag_puc_no_apto.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_bbva_aprobado.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_kuna_aprobado.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_eda.eq(1),
+                                                                ],
+                                                                [
+                                                                    "puc no apto",
+                                                                    "puc aprob bbva",
+                                                                    "puc aprob kuna",
+                                                                    "puc eam 700+",
+                                                                    "puc eda",
+                                                                ],
+                                                                default="puc otro",
+                                                            ),
+                                                            index=x.index,
+                                                        )
+                                                        .where(x.kpi_sales_center_flag_perfilado_credito.eq(1))
+                                                        .fillna("")
+                                                    ),
+            kpi_sales_center_cita_clasificacion=lambda x: np.where(
+                                                        x.flag_cita_agendada_oportunidad.eq(1) & x.kpi_sales_center_flag_perfilado.eq(1),
+                                                        "cita " + x.perf_intencion_pago+' '+x.kpi_sales_center_puc_resultado,
+                                                        "por definir",
+                                                    ),
+
         )
         .drop(columns=['aux_aprobado_1','aux_aprobado_2'])
         )
@@ -1288,7 +1327,6 @@ class ProcessedCrmAtlas:
 
         
         oportunidades_con_citas = (reporte_oportunidades
-                    # .drop(columns=['numero_citas_comprador','fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','citas_completas'])
                     .assign(flag_cita_comprador_agendada_oport = lambda x: x.opportunity_id.isin(citas_opor_existe.opportunity_id.unique()).astype(int),
                             flag_cita_comprador_agendada_proact = lambda x: x.id_am_comprador.isin(citas_proact.id_am.unique()).astype(int),
                             flag_cita_comprador_show = lambda x: (x.opportunity_id.isin(citas_show.opportunity_id.unique())).astype(int),
