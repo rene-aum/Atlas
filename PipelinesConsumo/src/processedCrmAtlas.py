@@ -1176,6 +1176,11 @@ class ProcessedCrmAtlas:
                 & x.kpi_sales_center_flag_contactado.eq(1)
                 & x.perf_interesado.eq('si')
             ).astype(int),
+            kpi_sales_center_flag_proceso_perfilamiento = lambda x: (
+                x.kpi_sales_center_flag_asignado.eq(1)
+                & x.kpi_sales_center_flag_contactado.eq(1)
+                & x.perf_interesado.eq('en proceso de perfilamiento')
+            ).astype(int),
             kpi_sales_center_flag_perfilado=lambda x: (
                 x.kpi_sales_center_flag_asignado.eq(1)
                 & x.kpi_sales_center_flag_contactado.eq(1)
@@ -1190,18 +1195,38 @@ class ProcessedCrmAtlas:
                 x.kpi_sales_center_flag_perfilado.eq(1)
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
-            kpi_sales_center_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
+            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) & x.perf_comentarios.str.contains('no apto')),
+            kpi_sales_center_flag_puc_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
                                                          & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
                                                          )
-                                                        # | (x.tipo_credito=='credito subprime')
                                                          ).astype(int),
             aux_aprobado_1 = lambda x: x.opportunity_source_aux.isin(['credito am api aprobado']),
             aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('glomo')| x.perf_comentarios.str.contains('api'))
                                                             & (x.perf_comentarios.str.contains('aprobado') | x.perf_comentarios.str.contains('bado'))
                                                           ),
-            kpi_sales_center_bbva_aprobado = lambda x:(x.kpi_sales_center_kuna_aprobado.eq(0) 
+            kpi_sales_center_flag_puc_bbva_aprobado = lambda x:(x.kpi_sales_center_kuna_aprobado.eq(0) 
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
-                                                          ).astype(int)
+                                                          ).astype(int),
+            kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
+            kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')),
+            kpi_sales_center_puc_resultado=lambda x: np.select(
+                                                            [
+                                                                x.kpi_sales_center_flag_puc_no_apto.eq(1),
+                                                                x.kpi_sales_center_flag_puc_bbva_aprobado.eq(1),
+                                                                x.kpi_sales_center_flag_puc_kuna_aprobado.eq(1),
+                                                                x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
+                                                                x.kpi_sales_center_flag_puc_eda.eq(1),
+                                                            ],
+                                                            [
+                                                                "puc no apto",
+                                                                "puc bbva",
+                                                                "puc kuna",
+                                                                "puc eam 700+",
+                                                                "puc eda",
+                                                            ],
+                                                            default='puc otro',  # or "sin_inferir"
+                                                        )
+
         )
         .drop(columns=['aux_aprobado_1','aux_aprobado_2'])
         )
