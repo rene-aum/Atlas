@@ -1200,6 +1200,7 @@ class ProcessedCrmAtlas:
                                                          & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
                                                          )
                                                          ).astype(int),
+ 
             aux_aprobado_1 = lambda x: x.opportunity_source_aux.isin(['credito am api aprobado']),
             aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('glomo')| x.perf_comentarios.str.contains('api'))
                                                             & (x.perf_comentarios.str.contains('aprobado') | x.perf_comentarios.str.contains('bado'))
@@ -1226,7 +1227,7 @@ class ProcessedCrmAtlas:
                                                                     "puc eam 700+",
                                                                     "puc eda",
                                                                 ],
-                                                                default="otro",
+                                                                default="puc otro",
                                                             ),
                                                             index=x.index,
                                                         )
@@ -1236,7 +1237,7 @@ class ProcessedCrmAtlas:
             kpi_sales_center_cita_clasificacion=lambda x: np.where(
                                                         x.flag_cita_agendada_oportunidad.eq(1) & x.kpi_sales_center_flag_perfilado.eq(1),
                                                         "cita " + x.perf_intencion_pago+' '+x.kpi_sales_center_puc_resultado,
-                                                        "",
+                                                        "por definir",
                                                     ),
 
         )
