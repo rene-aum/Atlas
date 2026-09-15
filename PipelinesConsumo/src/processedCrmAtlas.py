@@ -717,7 +717,7 @@ class ProcessedCrmAtlas:
                               fecha_asignacion = pd.to_datetime(oppss_proc.fecha_asignacion, format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
                              )
                         [['opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
-                         'opportunity_created_date','fecha_asignacion']]
+                         'opportunity_created_date','fecha_asignacion','id_am_comprador']]
                         )
 
         # usuarios
@@ -906,6 +906,46 @@ class ProcessedCrmAtlas:
                                   cancelado_por_equipo = lambda x: x.cancelado_por_equipo.mask(~x.status.str.contains('cancelado', na=False))
                                  )
                         )
+        # rellena perfilamientos faltantes a partir del id_am en oportunidades 
+        # [escogemos lineas a rellenar - cruzamos cuidando nulos - creamos campo de control de dias - 
+        # descartamos los que no encuentra y oportunidades futuras - deduplicamos citas escogiendo op mas cercana]
+        df_target_aux = ((citas_cons
+                            .loc[lambda x: pd.to_datetime(x.created_date).dt.normalize().ge(datetime(2026,8,17))]
+                            .loc[lambda x: x.opportunity_id.isna()]
+                            .loc[lambda x: x.id_am.notna()]
+                            .loc[lambda x: x.rol.isin(['comprador','desconocido'])])
+                            .assign(id_am  = lambda x: pd.to_numeric(x.id_am, errors='coerce').astype('Int64'))
+                        .merge((oppss_proc
+                                    [['id_am_comprador','opportunity_created_date','perf_bc_score','perf_intencion_pago']]
+                                    .assign(id_am_comprador  = lambda x: pd.to_numeric(x.id_am_comprador, errors='coerce').astype('Int64'))
+                                    .rename(columns = {'id_am_comprador':'id_am',
+                                                        'opportunity_created_date':'opportunity_created_date_aux',
+                                                        'perf_bc_score':'perf_bc_score_aux',
+                                                        'perf_intencion_pago':'perf_intencion_pago_aux'})
+                                    .loc[lambda x: x.id_am.notna()]
+                                ),
+                                how='left',
+                                on='id_am'
+                                )
+                        .assign(
+                            diff_op_cita = lambda x: (pd.to_datetime(x.created_date).dt.normalize() - pd.to_datetime(x.opportunity_created_date_aux).dt.normalize()).dt.days
+                            )
+                        .loc[lambda x: x.opportunity_created_date_aux.notna()]
+                        .loc[lambda x: x.diff_op_cita.ge(0)]
+                        .sort_values(['numero_cita', 'diff_op_cita'], ascending = [False, True])
+                        .drop_duplicates(subset=['numero_cita'],keep='first')
+                        [['numero_cita','perf_bc_score_aux','perf_intencion_pago_aux']]
+                        )
+        citas_cons = (citas_cons
+                        .merge(df_target_aux,
+                                how='left', 
+                                on='numero_cita'
+                                )
+                        .assign(
+                            perf_intencion_pago = lambda x: x.perf_intencion_pago.fillna(x.perf_intencion_pago_aux),
+                            perf_bc_score = lambda x: x.perf_bc_score.fillna(x.perf_bc_score_aux)
+                            )
+                    )
 
         # agregamos etiquetas de agrupacion operativa y damos orden final al df
         equipo_operativo = {e:'espacios fisicos' for e in CRM_EQUIPOS_ESPACIOS} | {sc: 'sales center' for sc in CRM_EQUIPOS_SALES_CENTER}
@@ -918,6 +958,8 @@ class ProcessedCrmAtlas:
 
 
         print('lineas finales en citas: ',len(citas_cons))
+        assert len(citas_proc) == len(citas_cons)
+        assert citas_proc.numero_cita.nunique() == citas_cons.numero_cita.nunique()
 
         return self._select_existing_columns(
             citas_cons,
