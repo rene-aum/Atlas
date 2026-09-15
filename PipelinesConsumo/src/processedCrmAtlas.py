@@ -1149,7 +1149,7 @@ class ProcessedCrmAtlas:
                                 )
         resultado = (reporte.assign(
             fecha_asignacion=fecha_asignacion,
-            perf_comentarios = lambda x: x.perf_comentarios.str.lower().fillna(''),
+            perf_comentarios = lambda x: x.perf_comentarios.fillna('').str.lower(),
             perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago),
             kpi_sales_center_flag_asignado=lambda x: (
                 x.case_owner_equipo_perf_sc.isin(equipos_sales_center)
@@ -1194,12 +1194,16 @@ class ProcessedCrmAtlas:
                                                          & x.perf_comentarios.str.contains('aprobado'))
                                                         | (x.tipo_credito=='credito subprime')
                                                          ).astype(int),
-            kpi_sales_center_bbva_aprobado = lambda x:(x.kpi_sales_center_kuna_aprobado.eq(0) 
-                                                       & ((x.perf_comentarios.str.contains('bbva') |x.perf_comentarios.str.contains('glomo'))
+            aux_aprobado_1 = lambda x: x.opportunity_source_aux.isin(['credito am api aprobado']),
+            aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') |x.perf_comentarios.str.contains('glomo'))
                                                             & (x.perf_comentarios.str.contains('aprobado'))
-                                                          )
-                                                       ).astype(int)
-        ))
+                                                          ),
+            kpi_sales_center_bbva_aprobado = lambda x:(x.kpi_sales_center_kuna_aprobado.eq(0) 
+                                                       & (x.aux_aprobado_1 | x.aux_aprobado_2)
+                                                          ).astype(int)
+        )
+        .drop(columns=['aux_aprobado_1','aux_aprobado_2'])
+        )
         return resultado
 
     def add_kpis_citas_por_oportunidad(self,reporte_oportunidades,reporte_citas):
