@@ -1192,7 +1192,7 @@ class ProcessedCrmAtlas:
             ).astype(int),
             kpi_sales_center_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
                                                          & x.perf_comentarios.str.contains('aprobado'))
-                                                        | (x.tipo_credito=='credito subprime')
+                                                        # | (x.tipo_credito=='credito subprime')
                                                          ).astype(int),
             aux_aprobado_1 = lambda x: x.opportunity_source_aux.isin(['credito am api aprobado']),
             aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') |x.perf_comentarios.str.contains('glomo'))
