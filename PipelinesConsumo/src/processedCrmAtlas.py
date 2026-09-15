@@ -1209,23 +1209,30 @@ class ProcessedCrmAtlas:
                                                           ).astype(int),
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
             kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
-            kpi_sales_center_puc_resultado=lambda x: np.select(
-                                                            [
-                                                                x.kpi_sales_center_flag_puc_no_apto.eq(1),
-                                                                x.kpi_sales_center_flag_puc_bbva_aprobado.eq(1),
-                                                                x.kpi_sales_center_flag_puc_kuna_aprobado.eq(1),
-                                                                x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
-                                                                x.kpi_sales_center_flag_puc_eda.eq(1),
-                                                            ],
-                                                            [
-                                                                "puc no apto",
-                                                                "puc bbva",
-                                                                "puc kuna",
-                                                                "puc eam 700+",
-                                                                "puc eda",
-                                                            ],
-                                                            default='puc otro',  # or "sin_inferir"
-                                                        ),
+            kpi_sales_center_puc_resultado=lambda x: (
+                                                        pd.Series(
+                                                            np.select(
+                                                                [
+                                                                    x.kpi_sales_center_flag_puc_no_apto.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_bbva_aprobado.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_kuna_aprobado.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_eda.eq(1),
+                                                                ],
+                                                                [
+                                                                    "puc no apto",
+                                                                    "puc aprob bbva",
+                                                                    "puc aprob kuna",
+                                                                    "puc eam 700+",
+                                                                    "puc eda",
+                                                                ],
+                                                                default="otro",
+                                                            ),
+                                                            index=x.index,
+                                                        )
+                                                        .where(x.kpi_sales_center_flag_perfilado_credito.eq(1))
+                                                        .fillna("")
+                                                    ),
             kpi_sales_center_cita_clasificacion=lambda x: np.where(
                                                         x.flag_cita_agendada_oportunidad.eq(1) & x.kpi_sales_center_flag_perfilado.eq(1),
                                                         "cita " + x.perf_intencion_pago+' '+x.kpi_sales_center_puc_resultado,
