@@ -1191,12 +1191,13 @@ class ProcessedCrmAtlas:
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
             kpi_sales_center_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
-                                                         & x.perf_comentarios.str.contains('aprobado'))
+                                                         & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
+                                                         )
                                                         # | (x.tipo_credito=='credito subprime')
                                                          ).astype(int),
             aux_aprobado_1 = lambda x: x.opportunity_source_aux.isin(['credito am api aprobado']),
-            aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') |x.perf_comentarios.str.contains('glomo'))
-                                                            & (x.perf_comentarios.str.contains('aprobado'))
+            aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('glomo')| x.perf_comentarios.str.contains('api'))
+                                                            & (x.perf_comentarios.str.contains('aprobado') | x.perf_comentarios.str.contains('bado'))
                                                           ),
             kpi_sales_center_bbva_aprobado = lambda x:(x.kpi_sales_center_kuna_aprobado.eq(0) 
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
@@ -1245,7 +1246,6 @@ class ProcessedCrmAtlas:
 
         
         oportunidades_con_citas = (reporte_oportunidades
-                    # .drop(columns=['numero_citas_comprador','fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','citas_completas'])
                     .assign(flag_cita_comprador_agendada_oport = lambda x: x.opportunity_id.isin(citas_opor_existe.opportunity_id.unique()).astype(int),
                             flag_cita_comprador_agendada_proact = lambda x: x.id_am_comprador.isin(citas_proact.id_am.unique()).astype(int),
                             flag_cita_comprador_show = lambda x: (x.opportunity_id.isin(citas_show.opportunity_id.unique())).astype(int),
