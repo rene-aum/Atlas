@@ -1189,6 +1189,10 @@ class ProcessedCrmAtlas:
                 x.kpi_sales_center_flag_perfilado.eq(1)
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
+            kpi_sales_center_kuna_aprobado = lambda x: ((x.perf_comentarios.fillna('').str.contains('kuna') 
+                                                         & x.perf_comentarios.fillna('').str.contains('aprobado'))
+                                                        | (x.tipo_credito=='credito subprime')
+                                                         ).astype(int)
         ))
         return resultado
 
