@@ -717,7 +717,7 @@ class ProcessedCrmAtlas:
                               fecha_asignacion = pd.to_datetime(oppss_proc.fecha_asignacion, format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
                              )
                         [['opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
-                         'opportunity_created_date','fecha_asignacion']]
+                         'opportunity_created_date','fecha_asignacion','id_am_comprador']]
                         )
 
         # usuarios
