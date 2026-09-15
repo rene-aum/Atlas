@@ -1045,10 +1045,12 @@ class ProcessedCrmAtlas:
 
         # final
 
-        final_origen_credito = (pd.concat([ops_credito[lambda x: x.n_simulaciones == 1][['opportunity_id', 'opportunity_source_calculado','simulation_name']],
+        final_origen_credito = (pd.concat([ops_credito[lambda x: x.n_simulaciones == 1][['opportunity_id', 'opportunity_source_calculado','simulation_name','tipo_credito','created_date']],
                                            origen_multi_sim[[
-                                               'opportunity_id', 'opportunity_source_calculado','simulation_name']]
+                                               'opportunity_id', 'opportunity_source_calculado','simulation_name','tipo_credito','created_date']]
                                            ])
+                                .rename(columns ={'simulation_name':'simulation_name_op',
+                                                  'created_date':'created_date_sim_op'})
                                 )
         print(
             f'Oportunidades con opportunity_source_calculado: {final_origen_credito.shape[0]}')
@@ -1188,6 +1190,10 @@ class ProcessedCrmAtlas:
                 x.kpi_sales_center_flag_perfilado.eq(1)
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
+            kpi_sales_center_kuna_aprobado = lambda x: ((x.perf_comentarios.fillna('').str.contains('kuna') 
+                                                         & x.perf_comentarios.fillna('').str.contains('aprobado'))
+                                                        | (x.tipo_credito=='credito subprime')
+                                                         ).astype(int)
         ))
         return resultado
 
