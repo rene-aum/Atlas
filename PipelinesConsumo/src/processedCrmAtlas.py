@@ -497,7 +497,7 @@ class ProcessedCrmAtlas:
             .sort_values(by=["opportunity_id", "created_date"], ascending=[False, False])
             .assign(
                 citas_completas=lambda x: x.status_cita.isin(
-                    [CRM_CRITERIOS_SHOW_CITAS]
+                    CRM_CRITERIOS_SHOW_CITAS
                 ).astype('int'),
                 fecha_agendada=lambda x: pd.to_datetime(
                     x.sched_start_time,
