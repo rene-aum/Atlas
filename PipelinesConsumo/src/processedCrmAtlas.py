@@ -1234,7 +1234,6 @@ class ProcessedCrmAtlas:
                                                         .where(x.kpi_sales_center_flag_perfilado_credito.eq(1))
                                                         .fillna("")
                                                     ),
-            kpi_sales_center_cita_clasificacion=lambda x: np.where(
             kpi_sales_center_cita_clasificacion=lambda x: np.select(
                                                             [
                                                                 x.flag_cita_agendada_oportunidad.eq(1)
