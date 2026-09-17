@@ -1213,13 +1213,14 @@ class ProcessedCrmAtlas:
                                                                   & x.perf_comentarios.str.contains('kuna')).astype(int),
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
             kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
-             kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) 
+            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) 
                                                            & x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0)
                                                            & x.kpi_sales_center_flag_puc_bbva_aprobado.eq(0)
                                                            & x.kpi_sales_center_flag_puc_kuna_rechazado.eq(0)
                                                            & x.kpi_sales_center_flag_puc_eda.eq(0)
                                                            & (x.perf_comentarios.str.contains('no apto')|x.perf_bc_score.le(569))).astype(int),
-                kpi_sales_center_puc_resultado=lambda x: (
+            # en lo que sigue DEMASIADO IMPORTANTE EL ORDEN DE LOS ARGUMENTOS DE np.select, si cumple el primero, no evalua lo demás y así sucesivamente....
+            kpi_sales_center_puc_resultado=lambda x: (
                                                             pd.Series(
                                                                 np.select(
                                                                     [
@@ -1247,21 +1248,22 @@ class ProcessedCrmAtlas:
                                                         ),
             kpi_sales_center_cita_clasificacion=lambda x: np.select(
                                                             [
-                                                                x.flag_cita_agendada_oportunidad.eq(1)
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendad.eq(1))
                                                                 & x.kpi_sales_center_flag_perfilado.eq(1),
-
-                                                                x.flag_cita_agendada_oportunidad.eq(1),
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendad.eq(1)) & x.kpi_sales_center_flag_asignado.eq(0),
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendad.eq(1))
                                                             ],
                                                             [
                                                                 "cita "
                                                                 + x.perf_intencion_pago.fillna("")
                                                                 + " "
                                                                 + x.kpi_sales_center_puc_resultado.fillna(""),
-
+                                                                "cita sin pasar por sc"
                                                                 "tbd",
                                                             ],
                                                             default="",
                                                         ),
+            
 
         )
         .drop(columns=['aux_aprobado_1','aux_aprobado_2',
