@@ -1277,11 +1277,23 @@ class ProcessedCrmAtlas:
                                                         .where(x.kpi_sales_center_flag_perfilado_credito.eq(1))
                                                         .fillna("")
                                                     ),
-            kpi_sales_center_cita_clasificacion=lambda x: np.where(
-                                                        x.flag_cita_agendada_oportunidad.eq(1) & x.kpi_sales_center_flag_perfilado.eq(1),
-                                                        "cita " + x.perf_intencion_pago+' '+x.kpi_sales_center_puc_resultado,
-                                                        "por definir",
-                                                    ),
+            kpi_sales_center_cita_clasificacion=lambda x: np.select(
+                                                            [
+                                                                x.flag_cita_agendada_oportunidad.eq(1)
+                                                                & x.kpi_sales_center_flag_perfilado.eq(1),
+
+                                                                x.flag_cita_agendada_oportunidad.eq(1),
+                                                            ],
+                                                            [
+                                                                "cita "
+                                                                + x.perf_intencion_pago.fillna("")
+                                                                + " "
+                                                                + x.kpi_sales_center_puc_resultado.fillna(""),
+
+                                                                "tbd",
+                                                            ],
+                                                            default="",
+                                                        ),
 
         )
         .drop(columns=['aux_aprobado_1','aux_aprobado_2'])
