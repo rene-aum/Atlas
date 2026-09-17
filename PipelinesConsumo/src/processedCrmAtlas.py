@@ -377,6 +377,42 @@ class ProcessedCrmAtlas:
         )
         return catalogo
 
+    def complementar_catalogo_usuarios(self, usuarios_data, usuarios_tec):
+        """
+        Complementa el catalogo manual con info del catalogo provisto por el 
+        equipo de tec
+        """
+        usuarios_tec = (
+            usuarios_tec
+            .drop_duplicates(subset='id', keep='last')
+        )
+
+        idsxagregar = (
+            usuarios_tec
+            [lambda x: ~x.id.isin(usuarios_data.id)]
+            .id.unique()
+        )
+
+        usuarios_mod = pd.concat(
+            [usuarios_data,
+            usuarios_tec[lambda x: x.id.isin(idsxagregar)]
+            ],
+            ignore_index=True
+        )
+
+        usuarios_mod = (
+            usuarios_mod
+            .merge(
+                usuarios_tec[['id', 'equipo']],
+                how='left',
+                on='id',
+                suffixes=('', '_tec')
+                )
+            .assign(equipo=lambda x: self._normalize_series(x.equipo.fillna(x.equipo_tec)))
+            .drop(columns='equipo_tec')
+            )
+
+        return usuarios_mod
     
 ##############################################################################################################
 ################################################ REPORTES ####################################################
