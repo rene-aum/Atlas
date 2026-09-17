@@ -1151,7 +1151,7 @@ class ProcessedCrmAtlas:
             fecha_asignacion=fecha_asignacion,
             perf_comentarios = lambda x: x.perf_comentarios.fillna('').str.lower(),
             perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago),
-            perf_bc_score = lambda x: pd.to_numeric(x.perf_bc_score,errors='coerce').astype('Int64'),
+            perf_bc_score = lambda x: pd.to_numeric(x.perf_bc_score,errors='coerce').astype(float),
             kpi_sales_center_flag_asignado=lambda x: (
                 x.case_owner_equipo_perf_sc.isin(equipos_sales_center)
                 | x.equipo_asesor_caso_tomado_perf_sc.isin(
