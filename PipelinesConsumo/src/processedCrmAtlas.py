@@ -1194,11 +1194,10 @@ class ProcessedCrmAtlas:
             fecha_asignacion=fecha_asignacion,
             perf_comentarios = lambda x: x.perf_comentarios.fillna('').str.lower(),
             perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago),
+            perf_bc_score = lambda x: pd.to_numeric(x.perf_bc_score,errors='coerce').astype(float),
             kpi_sales_center_flag_asignado=lambda x: (
                 x.case_owner_equipo_perf_sc.isin(equipos_sales_center)
-                | x.equipo_asesor_caso_tomado_perf_sc.isin(
-                    equipos_sales_center
-                )
+                
             ).astype(int),
             kpi_sales_center_fecha_asignado=lambda x: (
                 x.fecha_asignacion
@@ -1238,7 +1237,7 @@ class ProcessedCrmAtlas:
                 x.kpi_sales_center_flag_perfilado.eq(1)
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
-            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) & x.perf_comentarios.str.contains('no apto')).astype(int),
+           
             kpi_sales_center_flag_puc_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
                                                          & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
                                                          )
@@ -1251,52 +1250,70 @@ class ProcessedCrmAtlas:
             kpi_sales_center_flag_puc_bbva_aprobado = lambda x:(x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0) 
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
                                                           ).astype(int),
+            kpi_sales_center_flag_puc_kuna_rechazado = lambda x: (x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0)
+                                                                  & x.kpi_sales_center_flag_puc_bbva_aprobado.eq(0)
+                                                                  & x.perf_comentarios.str.contains('chazado')
+                                                                  & x.perf_comentarios.str.contains('kuna')).astype(int),
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
             kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
+            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) 
+                                                           & x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0)
+                                                           & x.kpi_sales_center_flag_puc_bbva_aprobado.eq(0)
+                                                           & x.kpi_sales_center_flag_puc_kuna_rechazado.eq(0)
+                                                           & x.kpi_sales_center_flag_puc_eda.eq(0)
+                                                           & (x.perf_comentarios.str.contains('no apto')|x.perf_bc_score.le(569))).astype(int),
+            # en lo que sigue DEMASIADO IMPORTANTE EL ORDEN DE LOS ARGUMENTOS DE np.select, si cumple el primero, no evalua lo demás y así sucesivamente....
             kpi_sales_center_puc_resultado=lambda x: (
-                                                        pd.Series(
-                                                            np.select(
-                                                                [
-                                                                    x.kpi_sales_center_flag_puc_no_apto.eq(1),
-                                                                    x.kpi_sales_center_flag_puc_bbva_aprobado.eq(1),
-                                                                    x.kpi_sales_center_flag_puc_kuna_aprobado.eq(1),
-                                                                    x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
-                                                                    x.kpi_sales_center_flag_puc_eda.eq(1),
-                                                                ],
-                                                                [
-                                                                    "puc no apto",
-                                                                    "puc aprob bbva",
-                                                                    "puc aprob kuna",
-                                                                    "puc eam 700+",
-                                                                    "puc eda",
-                                                                ],
-                                                                default="puc otro",
-                                                            ),
-                                                            index=x.index,
-                                                        )
-                                                        .where(x.kpi_sales_center_flag_perfilado_credito.eq(1))
-                                                        .fillna("")
-                                                    ),
+                                                            pd.Series(
+                                                                np.select(
+                                                                    [
+                                                                        x.kpi_sales_center_flag_puc_eda.eq(1),
+                                                                        x.kpi_sales_center_flag_puc_bbva_aprobado.eq(1),
+                                                                        x.kpi_sales_center_flag_puc_kuna_aprobado.eq(1),
+                                                                        x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
+                                                                        x.kpi_sales_center_flag_puc_kuna_rechazado.eq(1),
+                                                                        x.kpi_sales_center_flag_puc_no_apto.eq(1)
+                                                                    ],
+                                                                    [
+                                                                        "puc eda",
+                                                                        "puc aprob bbva",
+                                                                        "puc aprob kuna",
+                                                                        "puc eam 700+",
+                                                                        "puc kuna rechazado",
+                                                                        "puc no apto"
+                                                                    ],
+                                                                    default="puc otro",
+                                                                ),
+                                                                index=x.index,
+                                                            )
+                                                            .where(x.kpi_sales_center_flag_perfilado_credito.eq(1))
+                                                            .fillna("")
+                                                        ),
             kpi_sales_center_cita_clasificacion=lambda x: np.select(
                                                             [
-                                                                x.flag_cita_agendada_oportunidad.eq(1)
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendada.eq(1))
                                                                 & x.kpi_sales_center_flag_perfilado.eq(1),
-
-                                                                x.flag_cita_agendada_oportunidad.eq(1),
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendada.eq(1)) & x.kpi_sales_center_flag_asignado.eq(0),
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendada.eq(1))
                                                             ],
                                                             [
                                                                 "cita "
                                                                 + x.perf_intencion_pago.fillna("")
                                                                 + " "
                                                                 + x.kpi_sales_center_puc_resultado.fillna(""),
-
+                                                                "cita sin pasar por sc",
                                                                 "tbd",
                                                             ],
                                                             default="",
                                                         ),
+            
 
         )
-        .drop(columns=['aux_aprobado_1','aux_aprobado_2'])
+        .drop(columns=['aux_aprobado_1','aux_aprobado_2',
+                       'kpi_sales_center_flag_puc_kuna_aprobado','kpi_sales_center_flag_puc_bbva_aprobado',
+                       'kpi_sales_center_flag_puc_kuna_rechazado','kpi_sales_center_flag_puc_eda',
+                       'kpi_sales_center_flag_puc_pasa_eam_700','kpi_sales_center_flag_puc_no_apto',
+                       ])
         )
         return resultado
 
