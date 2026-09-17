@@ -1258,7 +1258,7 @@ class ProcessedCrmAtlas:
                                                                 + x.perf_intencion_pago.fillna("")
                                                                 + " "
                                                                 + x.kpi_sales_center_puc_resultado.fillna(""),
-                                                                "cita sin pasar por sc"
+                                                                "cita sin pasar por sc",
                                                                 "tbd",
                                                             ],
                                                             default="",
