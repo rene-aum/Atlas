@@ -1197,7 +1197,7 @@ class ProcessedCrmAtlas:
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
             kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) & 
-                                                          (x.perf_comentarios.str.contains('no apto')|x.perf_bc_score.le(569))).astype(int),
+                                                          (x.perf_comentarios.str.contains('no apto')|x.perf_bc_score.fillna(0).le(569))).astype(int),
             kpi_sales_center_flag_puc_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
                                                          & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
                                                          )
