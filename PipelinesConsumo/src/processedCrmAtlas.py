@@ -1248,10 +1248,10 @@ class ProcessedCrmAtlas:
                                                         ),
             kpi_sales_center_cita_clasificacion=lambda x: np.select(
                                                             [
-                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendad.eq(1))
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendada.eq(1))
                                                                 & x.kpi_sales_center_flag_perfilado.eq(1),
-                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendad.eq(1)) & x.kpi_sales_center_flag_asignado.eq(0),
-                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendad.eq(1))
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendada.eq(1)) & x.kpi_sales_center_flag_asignado.eq(0),
+                                                                (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendada.eq(1))
                                                             ],
                                                             [
                                                                 "cita "
