@@ -1151,6 +1151,7 @@ class ProcessedCrmAtlas:
             fecha_asignacion=fecha_asignacion,
             perf_comentarios = lambda x: x.perf_comentarios.fillna('').str.lower(),
             perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago),
+            perf_bc_score = lambda x: pd.to_numeric(x.perf_bc_score,errors='coerce').astype('Int64'),
             kpi_sales_center_flag_asignado=lambda x: (
                 x.case_owner_equipo_perf_sc.isin(equipos_sales_center)
                 | x.equipo_asesor_caso_tomado_perf_sc.isin(
@@ -1195,7 +1196,8 @@ class ProcessedCrmAtlas:
                 x.kpi_sales_center_flag_perfilado.eq(1)
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
-            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) & x.perf_comentarios.str.contains('no apto')).astype(int),
+            kpi_sales_center_flag_puc_no_apto = lambda x:(x.kpi_sales_center_flag_perfilado.eq(1) & 
+                                                          (x.perf_comentarios.str.contains('no apto')|x.perf_bc_score.le(569))).astype(int),
             kpi_sales_center_flag_puc_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
                                                          & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
                                                          )
@@ -1208,6 +1210,10 @@ class ProcessedCrmAtlas:
             kpi_sales_center_flag_puc_bbva_aprobado = lambda x:(x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0) 
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
                                                           ).astype(int),
+            kpi_sales_center_flag_puc_kuna_rechazado = lambda x: (x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0)
+                                                                  & x.kpi_sales_center_flag_puc_bbva_aprobado.eq(0)
+                                                                  & x.perf_comentarios.str.contains('chazado')
+                                                                  & x.perf_cometnarios.str.contains('kuna')).astype(int),
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
             kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
             kpi_sales_center_puc_resultado=lambda x: (
@@ -1219,6 +1225,7 @@ class ProcessedCrmAtlas:
                                                                     x.kpi_sales_center_flag_puc_kuna_aprobado.eq(1),
                                                                     x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
                                                                     x.kpi_sales_center_flag_puc_eda.eq(1),
+                                                                    x.kpi_sales_center_flag_puc_kuna_rechazado.eq(1)
                                                                 ],
                                                                 [
                                                                     "puc no apto",
@@ -1226,6 +1233,7 @@ class ProcessedCrmAtlas:
                                                                     "puc aprob kuna",
                                                                     "puc eam 700+",
                                                                     "puc eda",
+                                                                    "puc kuna rechazado"
                                                                 ],
                                                                 default="puc otro",
                                                             ),
