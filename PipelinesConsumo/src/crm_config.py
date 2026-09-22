@@ -5,6 +5,11 @@ The dictionaries live here so field changes from Salesforce can be reviewed in
 one place, instead of being hidden inside notebook cells.
 """
 
+ID_AM_DUMMIES = [1067687,
+                 1067696,
+                 1067711,
+                 1067720]
+
 CRM_SOURCE_FOLDER_ID = "17jg82rYHkuGf2Vbx_HIvEWNjQuRZvulv"
 
 # Set this from the notebook or constants once the traceability folder exists.

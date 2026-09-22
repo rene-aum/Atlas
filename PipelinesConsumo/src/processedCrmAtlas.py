@@ -889,6 +889,7 @@ class ProcessedCrmAtlas:
                             id_am = lambda x: x.id_am.astype('Int64').fillna(-1),
 
                             flag_dummy = lambda x: (x.opportunity_id.notna() & x.flag_booker_origen_nulo.eq(1))*1,
+                            flag_dummy = lambda x: x.flag_dummy.mask((x.id_am.isin(ID_AM_DUMMIES) & x.flag_cita_agendada_comprador.eq(1)), 1),
                             flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
                             flag_cita_agendada_comprador = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1
                             )
