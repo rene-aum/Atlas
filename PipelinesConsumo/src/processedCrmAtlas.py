@@ -891,10 +891,9 @@ class ProcessedCrmAtlas:
                             id_am = lambda x: x.id_am.astype('Int64').fillna(-1),
 
                             flag_cita_show_comprador = lambda x: (x.status.isin(CRM_CRITERIOS_SHOW_CITAS))*1,
-                            flag_cita_agendada_comprador0 = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1,
-                            flag_dummy0 = lambda x: (x.opportunity_id.notna() & x.flag_booker_origen_nulo.eq(1))*1,
-                            flag_dummy = lambda x: x.flag_dummy0.mask((x.id_am.isin(ID_AM_DUMMIES) & x.flag_cita_agendada_comprador.eq(1)), 1),
-                            flag_cita_agendada_comprador = lambda x: (x.flag_cita_agendada_comprador0.eq(1) & x.flag_dummy.eq(0))*1
+                            flag_cita_agendada_comprador_tmp = lambda x: (x.rol.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['rol']) & x.work_type_name.isin(CRM_CRITERIOS_AGENDAMIENTO_CITAS['wtn']))*1,
+                            flag_dummy = lambda x: ( (x.opportunity_id.notna() & x.flag_booker_origen_nulo.eq(1)) | (x.id_am.isin(ID_AM_DUMMIES) & x.flag_cita_agendada_comprador_tmp.eq(1)) )*1,
+                            flag_cita_agendada_comprador = lambda x: (x.flag_cita_agendada_comprador_tmp.eq(1) & x.flag_dummy.eq(0))*1
                             )
                           .sort_values(by=['rol', 'flag_dummy', 'sf_order_id', 'flag_cita_show_comprador', 'created_date'], 
                                     ascending = [True, True, False, False, False])
@@ -902,6 +901,7 @@ class ProcessedCrmAtlas:
                             flag_duplicada = lambda x: (x.duplicated(subset=['id_am', 'work_type_name', 'rol', 'sched_date', 'sf_order_id'], 
                                                                     keep = 'first'))*1
                                 )
+                          .drop(columns='flag_cita_agendada_comprador_tmp')
                      )
 
         # agrega etiqueta de owner de caso de perfilamiento_sc
