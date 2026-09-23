@@ -1279,13 +1279,14 @@ class ProcessedCrmAtlas:
             ).astype(int),
            
             kpi_sales_center_flag_puc_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
-                                                         & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado'))
+                                                         & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado')
+                                                            | x.perf_comentarios.str.contains('prea')|x.perf_comentarios.str.contains('preauto')|x.perf_comentarios.str.contains('preat'))
                                                          )
                                                          ).astype(int),
  
             aux_aprobado_1 = lambda x: x.opportunity_source_aux.isin(['credito am api aprobado']),
             aux_aprobado_2 = lambda x: ((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('glomo')| x.perf_comentarios.str.contains('api'))
-                                                            & (x.perf_comentarios.str.contains('aprobado') | x.perf_comentarios.str.contains('bado'))
+                                                            & (x.perf_comentarios.str.contains('aprobado') | x.perf_comentarios.str.contains('bado') | x.perf_comentarios.str.contains('viable'))
                                                           ),
             kpi_sales_center_flag_puc_bbva_aprobado = lambda x:(x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0) 
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
