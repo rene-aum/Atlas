@@ -464,6 +464,8 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'opportunity_owner_id',
     'opportunity_owner',
     'opportunity_owner_equipo',
+    'opportunity_source',
+    'opportunity_source_aux',
     'opportunity_stage',
     'fecha_asignacion',
     'perf_intencion_pago',

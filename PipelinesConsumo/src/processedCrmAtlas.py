@@ -728,7 +728,7 @@ class ProcessedCrmAtlas:
     def proc_reporte_citas(
         self,
         citas_proc,
-        oppss_proc,
+        oppss_reporte,
         pedidos_proc,
         usuarios_proc,
         acclientes,
@@ -750,12 +750,12 @@ class ProcessedCrmAtlas:
                         )
 
         # oportunidades
-        oppss_proc = (oppss_proc
-                      .assign(opportunity_created_date = pd.to_datetime(oppss_proc.opportunity_created_date, format='%Y-%m-%d %H:%M').dt.strftime('%Y-%m-%d'),
-                              fecha_asignacion = pd.to_datetime(oppss_proc.fecha_asignacion, format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
+        oppss_reporte = (oppss_reporte
+                      .assign(opportunity_created_date = pd.to_datetime(oppss_reporte.opportunity_created_date, format='%Y-%m-%d %H:%M').dt.strftime('%Y-%m-%d'),
+                              fecha_asignacion = pd.to_datetime(oppss_reporte.fecha_asignacion, format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
                              )
                         [['opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
-                         'opportunity_created_date','fecha_asignacion','id_am_comprador']]
+                         'opportunity_created_date','fecha_asignacion','id_am_comprador','opportunity_source','opportunity_source_aux']]
                         )
 
         # usuarios
@@ -808,9 +808,9 @@ class ProcessedCrmAtlas:
                         .drop(columns=['id_am_vendedor_aux', 'id_am_comprador_aux'])
                     )
 
-        # agregamos id y nombre de owner, bc score y perfilamiento de sc y cc a partir del reporte de oportunidades
+        # agregamos atributos de la oportunidad asociada como origen, stage, fechas, owner, perfilamientos
         citas_cons = (citas_cons
-                        .merge(oppss_proc, 
+                        .merge(oppss_reporte, 
                                 how='left', 
                                 on='opportunity_id')
                         .rename(columns={'owner_id': 'opportunity_owner_id'})
@@ -955,7 +955,7 @@ class ProcessedCrmAtlas:
                             .loc[lambda x: x.id_am.notna()]
                             .loc[lambda x: x.rol.isin(['comprador','desconocido'])])
                             .assign(id_am  = lambda x: pd.to_numeric(x.id_am, errors='coerce').astype('Int64'))
-                        .merge((oppss_proc
+                        .merge((oppss_reporte
                                     [['id_am_comprador','opportunity_created_date','perf_bc_score','perf_intencion_pago']]
                                     .assign(id_am_comprador  = lambda x: pd.to_numeric(x.id_am_comprador, errors='coerce').astype('Int64'))
                                     .rename(columns = {'id_am_comprador':'id_am',
