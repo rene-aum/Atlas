@@ -1291,7 +1291,7 @@ class ProcessedCrmAtlas:
             kpi_sales_center_flag_puc_bbva_aprobado = lambda x:(x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0) 
                                                        & (x.aux_aprobado_1 | x.aux_aprobado_2)
                                                           ).astype(int),
-            kpi_sales_center_flag_no_acepta_kuna = lambda x: (x.perf_comentarios.str.contains('no acepta kuna')).astype(int),
+            kpi_sales_center_flag_no_acepta_kuna = lambda x: (x.perf_comentarios.str.contains('no acepta kuna') | x.perf_comentarios.str.contains('kuna no acepta')).astype(int),
             kpi_sales_center_flag_puc_kuna_rechazado = lambda x: (x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0)
                                                                   & x.kpi_sales_center_flag_no_acepta_kuna.eq(0)
                                                                   & x.kpi_sales_center_flag_puc_bbva_aprobado.eq(0)
