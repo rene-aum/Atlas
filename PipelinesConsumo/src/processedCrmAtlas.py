@@ -1277,7 +1277,7 @@ class ProcessedCrmAtlas:
                 x.kpi_sales_center_flag_perfilado.eq(1)
                 & x.perf_intencion_pago.eq("contado")
             ).astype(int),
-           
+            # flags auxiliares para resultado de puc
             kpi_sales_center_flag_puc_kuna_aprobado = lambda x: ((x.perf_comentarios.str.contains('kuna') 
                                                          & (x.perf_comentarios.str.contains('aprobado')|x.perf_comentarios.str.contains('bado')
                                                             | x.perf_comentarios.str.contains('prea')|x.perf_comentarios.str.contains('preauto')|x.perf_comentarios.str.contains('preat'))
@@ -1308,6 +1308,7 @@ class ProcessedCrmAtlas:
                                                            & x.kpi_sales_center_flag_puc_kuna_rechazado.eq(0)
                                                            & x.kpi_sales_center_flag_puc_eda.eq(0)
                                                            & (x.perf_comentarios.str.contains('no apto')|x.perf_bc_score.le(569))).astype(int),
+
             # en lo que sigue DEMASIADO IMPORTANTE EL ORDEN DE LOS ARGUMENTOS DE np.select, si cumple el primero, no evalua lo demás y así sucesivamente....
             kpi_sales_center_puc_resultado=lambda x: (
                                                             pd.Series(
@@ -1338,6 +1339,27 @@ class ProcessedCrmAtlas:
                                                             .where(x.kpi_sales_center_flag_perfilado_credito.eq(1))
                                                             .fillna("")
                                                         ),
+            kpi_sales_center_puc_avanza = lambda x: np.select([
+                                                                x.kpi_sales_center_puc_resultado.isin(["puc eda",
+                                                                                                        "puc aprob bbva",
+                                                                                                        "puc aprob kuna",
+                                                                                                        "puc eam 700+",
+                                                                                                        "puc bbva sin folio 650+"]),
+                                                                x.kpi_sales_center_puc_resultado.isin(["puc otro",
+                                                                                                        "puc kuna rechazado",
+                                                                                                        "puc no apto"])
+                                                                ],
+                                                                [
+                                                                    'puc avanza',
+                                                                    'puc no apto - rechazado - otro'
+                                                                ],
+                                                                default="",
+                                                                ),
+            kpi_sales_center_puc_avanza_no_cita_caida = lambda x: np.where((x.kpi_sales_center_puc_avanza=='puc avanza')
+                                                                           & (x.flag_cita_agendada_oportunidad.eq(0) & x.flag_cita_sin_pedido_agendada.eq(0))
+                                                                           & (x.opportunity_stage=='cerrada (perdida)'),
+                                                                           x.detalle_motivo_cierre_oportunidad.fillna("N/A"),
+                                                                           ""),
             kpi_sales_center_cita_clasificacion=lambda x: np.select(
                                                             [
                                                                 (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendada.eq(1))
