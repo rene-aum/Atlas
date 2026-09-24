@@ -1362,7 +1362,7 @@ class ProcessedCrmAtlas:
                        'kpi_sales_center_flag_puc_kuna_aprobado','kpi_sales_center_flag_puc_bbva_aprobado',
                        'kpi_sales_center_flag_puc_kuna_rechazado','kpi_sales_center_flag_puc_eda',
                        'kpi_sales_center_flag_puc_pasa_eam_700','kpi_sales_center_flag_puc_no_apto',
-                       'kpi_sales_center_flag_bbva_sin_folio_650'
+                       
                        ])
         )
         return resultado
