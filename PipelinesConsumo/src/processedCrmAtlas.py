@@ -21,6 +21,7 @@ try:
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
         CRM_CRITERIOS_SHOW_CITAS,
         CRM_CRITERIOS_HISTSHOW_CITAS,
+        REPORTE_VENTAS_COLUMNS
     )
     from PipelinesConsumo.src.constants import mexico_tz
 except ModuleNotFoundError:
@@ -40,6 +41,7 @@ except ModuleNotFoundError:
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
         CRM_CRITERIOS_SHOW_CITAS,
         CRM_CRITERIOS_HISTSHOW_CITAS,
+        REPORTE_VENTAS_COLUMNS
     )
     from src.constants import mexico_tz
 
@@ -1004,6 +1006,92 @@ class ProcessedCrmAtlas:
         return self._select_existing_columns(
             citas_cons,
             self._dedupe_columns(CRM_REPORTE_CITAS_COLUMNS),
+        )
+
+    def proc_reporte_ventas(historico_ventas_finz, acpedidos, acoportunidades):
+        # Afinamos reportes de sheets
+        hvf = (
+            historico_ventas_finz
+            .rename(columns={'id_salesforce':'sfoid',
+                            'fecha_financiamiento_complemento_eam':'fh_entrega'})
+            .assign(fh_entrega = lambda x: pd.to_datetime(x.fh_entrega).dt.strftime('%Y-%m-%d'))
+        )
+
+        acpdds = (
+            acpedidos
+                [['sf_order_id','opportunity_id','nombre_comprador','id_am_comprador','nombre_vendedor','id_am_vendedor',
+                'precio_de_publicacion','fecha_de_creacion','vin','sku']]
+            .rename(columns = {'sf_order_id':'sfoid'})
+            )
+
+        acoppss = (
+            acoportunidades
+                [['opportunity_id','opportunity_name','opportunity_created_date_day','opportunity_stage','fecha_asignacion',
+                    'opportunity_source','opportunity_source_aux','fecha_caso_tomado_sc','fecha_asignacion_perfilamiento_credito',
+                    'fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','flag_cita_show_oportunidad'
+                ]]
+            )
+
+        # Unimos ventas y pedidos
+        ventas_pdds = (
+            hvf
+            .assign(fh_entrega = lambda x: pd.to_datetime(x.fh_entrega),
+                    sfoid = lambda x: pd.to_numeric(x.sfoid, errors='coerce').astype('Int64'))
+            .merge((acpdds
+                        .assign(sfoid = lambda x: pd.to_numeric(x.sfoid, errors='coerce').astype('Int64'))
+                    ),
+                    how = 'left',
+                    on='sfoid')
+        )
+
+        # Atribuimos ventas a oportunidades (unimos con acoppss)
+        atr_ventas = (
+            ventas_pdds
+            .merge((acoppss
+                        .assign(opportunity_created_date_day = lambda x: pd.to_datetime(x.opportunity_created_date_day))
+                    ),
+                    how='left',
+                    on='opportunity_id')
+            .assign(
+                fecha_de_creacion = lambda x: pd.to_datetime(x.fecha_de_creacion),
+                mes_entrega = lambda x: x.fh_entrega.dt.strftime('%Y-%m'),
+                ent_ori = lambda x: (x.fh_entrega - x.opportunity_created_date_day).dt.days,
+                flag_stage_ganada = lambda x: np.where(x.opportunity_stage.isna(), 2, (~x.opportunity_stage.isin(['cerrada (ganada)']))*1),
+                # fh_entrega = lambda x: x.fh_entrega.dt.date,
+                )
+            )
+
+        # Generamos salida
+        subprimes = ventas_pdds[lambda x: x.flg_kuna.eq(1)].sfoid.unique()
+        cols_montos = ['valor_vehiculo', 'precio_de_publicacion', 'monto_total', 'monto_financiado', 'monto_anticipo', 'monto_complemento', 'monto_enganche']
+        cols_fechas = ['fecha_de_apartado','fecha_de_entrega','opportunity_created_date_day']
+        acventas2 = (atr_ventas
+                        .sort_values(by='fh_entrega',ascending=False)
+                        .rename(
+                            columns = {'sfoid':'sf_order_id',
+                                        'fecha_de_creacion':'fecha_de_apartado',
+                                        'fh_entrega':'fecha_de_entrega',
+                                        'formato_pago':'tipo_de_venta',
+                                        'nuevo_precio_final':'monto_total',
+                                        }
+                        )
+                        .assign(
+                            seguro = '',
+                            garantia = '',
+                            status = lambda x: x.opportunity_stage.replace('cerrada (ganada)', 'ENTREGA EXITOSA'),
+                            espacio_am = lambda x: x.espacio_am.map({'Samara Satélite':'samara',
+                                                                        'Torre BBVA':'torre',
+                                                                        'Gran Sur':'gran sur',
+                                                                        'Patriotismo':'patriotismo'}),
+                            tipo_de_venta = lambda x: x.tipo_de_venta.mask(x.sf_order_id.isin(subprimes), 'Subprime').astype(str).str.lower(),
+                            opportunity_source = lambda x: x.opportunity_source.mask(x.opportunity_source.eq('credito am'), x.opportunity_source_aux).fillna('desconocido'),
+                            **{col_fh : lambda x, col_fh=col_fh: x[col_fh].dt.strftime('%Y-%m-%d') for col_fh in cols_fechas},
+                            **{col_num : lambda x, col_num=col_num: ((pd.to_numeric(x[col_num], errors='coerce')).round(0)) for col_num in cols_montos},
+                            )
+                    )
+        return self._select_existing_columns(
+            acventas2,
+            self._dedupe_columns(REPORTE_VENTAS_COLUMNS),
         )
 
 
