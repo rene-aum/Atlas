@@ -1356,7 +1356,7 @@ class ProcessedCrmAtlas:
                                                                 default="",
                                                                 ),
             kpi_sales_center_puc_avanza_no_cita_caida = lambda x: np.where((x.kpi_sales_center_puc_avanza=='puc avanza')
-                                                                           & (x.flag_cita_agendada_oportunidad.eq(0) & x.flag_cita_sin_pedido_agendada.eq(0))
+                                                                           & (x.flag_cita_agendada_oportunidad.fillna(0).eq(0) & x.flag_cita_sin_pedido_agendada.fillna(0).eq(0))
                                                                            & (x.opportunity_stage=='cerrada (perdida)'),
                                                                            x.detalle_motivo_cierre_oportunidad.fillna("N/A"),
                                                                            ""),
