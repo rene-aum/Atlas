@@ -1008,7 +1008,7 @@ class ProcessedCrmAtlas:
             self._dedupe_columns(CRM_REPORTE_CITAS_COLUMNS),
         )
 
-    def proc_reporte_ventas(historico_ventas_finz, acpedidos, acoportunidades):
+    def proc_reporte_ventas(self, historico_ventas_finz, acpedidos, acoportunidades):
         # Afinamos reportes de sheets
         hvf = (
             historico_ventas_finz
