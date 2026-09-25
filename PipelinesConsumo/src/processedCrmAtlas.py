@@ -1008,7 +1008,7 @@ class ProcessedCrmAtlas:
             self._dedupe_columns(CRM_REPORTE_CITAS_COLUMNS),
         )
 
-    def proc_reporte_ventas(self, historico_ventas_finz, acpedidos, acoportunidades):
+    def proc_reporte_ventas(self, historico_ventas_finz, acpedidos, acoportunidades, acventasv1):
         # Afinamos reportes de sheets
         hvf = (
             historico_ventas_finz
@@ -1033,7 +1033,7 @@ class ProcessedCrmAtlas:
             )
         
         acventasv1 = (
-            read_from_google_sheets(gc, '15QGlzFy92ptZTUAEa57f-pyub2JgQzeAKRpTewu9Rx0', 'Hoja 1')
+            acventasv1
             .drop_duplicates('sf_order_id')
             [['sf_order_id','id_am_comprador','fecha_de_apartado','status','sku','vin']]
         )
