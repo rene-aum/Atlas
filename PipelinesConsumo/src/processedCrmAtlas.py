@@ -1031,6 +1031,12 @@ class ProcessedCrmAtlas:
                     'fecha_primera_cita_visita_comp','fecha_ultima_cita_visita_comp','flag_cita_show_oportunidad'
                 ]]
             )
+        
+        acventasv1 = (
+            read_from_google_sheets(gc, '15QGlzFy92ptZTUAEa57f-pyub2JgQzeAKRpTewu9Rx0', 'Hoja 1')
+            .drop_duplicates('sf_order_id')
+            [['sf_order_id','id_am_comprador','fecha_de_apartado','status','sku','vin']]
+        )
 
         # Unimos ventas y pedidos
         ventas_pdds = (
@@ -1089,11 +1095,26 @@ class ProcessedCrmAtlas:
                             **{col_num : lambda x, col_num=col_num: ((pd.to_numeric(x[col_num], errors='coerce')).round(0)) for col_num in cols_montos},
                             )
                     )
+        # Rellenamos datos de sfoid's que no se encuentran en acpedidos
+        cols_rellenar = ['id_am_comprador','fecha_de_apartado','status','sku','vin']
+        acventas2 = (
+            acventas2
+            .merge(
+                acventasv1,
+                how = 'left',
+                on = 'sf_order_id',
+                suffixes = ['','_hist']
+            )
+            .assign(
+                **{col: lambda x, col=col: x[col].fillna(x[col+'_hist']) for col in cols_rellenar}
+            )
+            .drop(columns=[col+'_hist' for col in cols_rellenar])
+        )
+
         return self._select_existing_columns(
             acventas2,
             self._dedupe_columns(REPORTE_VENTAS_COLUMNS),
         )
-
 
     def proc_reporte_simulaciones(self,solicitudes_credito):
         return self._select_existing_columns(
