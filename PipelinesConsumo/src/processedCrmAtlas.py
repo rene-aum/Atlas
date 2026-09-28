@@ -815,10 +815,10 @@ class ProcessedCrmAtlas:
         # agregamos atributos de la oportunidad asociada como origen, stage, fechas, owner, perfilamientos
         citas_cons = (citas_cons
                         .merge(oppss_reporte
-                                [
+                                [[
                                     'opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
                                     'opportunity_created_date','fecha_asignacion','id_am_comprador','opportunity_source','opportunity_source_aux'
-                                ],
+                                ]],
                                 how='left', 
                                 on='opportunity_id')
                         .rename(columns={'owner_id': 'opportunity_owner_id'})
