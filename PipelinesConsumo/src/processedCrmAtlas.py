@@ -21,6 +21,7 @@ try:
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
         CRM_CRITERIOS_SHOW_CITAS,
         CRM_CRITERIOS_HISTSHOW_CITAS,
+        CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR,
         REPORTE_VENTAS_COLUMNS
     )
     from PipelinesConsumo.src.constants import mexico_tz
@@ -41,6 +42,7 @@ except ModuleNotFoundError:
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
         CRM_CRITERIOS_SHOW_CITAS,
         CRM_CRITERIOS_HISTSHOW_CITAS,
+        CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR,
         REPORTE_VENTAS_COLUMNS
     )
     from src.constants import mexico_tz
@@ -756,7 +758,7 @@ class ProcessedCrmAtlas:
                       .assign(opportunity_created_date = pd.to_datetime(oppss_reporte.opportunity_created_date, format='%Y-%m-%d %H:%M').dt.strftime('%Y-%m-%d'),
                               fecha_asignacion = pd.to_datetime(oppss_reporte.fecha_asignacion, format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
                              )
-                        [['opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
+                        [['opportunity_id', 'opportunity_name', 'owner_id', 'opportunity_owner','opportunity_owner_equipo','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
                          'opportunity_created_date','fecha_asignacion','id_am_comprador','opportunity_source','opportunity_source_aux']]
                         )
 
@@ -812,7 +814,11 @@ class ProcessedCrmAtlas:
 
         # agregamos atributos de la oportunidad asociada como origen, stage, fechas, owner, perfilamientos
         citas_cons = (citas_cons
-                        .merge(oppss_reporte, 
+                        .merge(oppss_reporte
+                                [[
+                                    'opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
+                                    'opportunity_created_date','fecha_asignacion','id_am_comprador','opportunity_source','opportunity_source_aux'
+                                ]],
                                 how='left', 
                                 on='opportunity_id')
                         .rename(columns={'owner_id': 'opportunity_owner_id'})
@@ -952,31 +958,32 @@ class ProcessedCrmAtlas:
         # [escogemos lineas a rellenar - cruzamos cuidando nulos - creamos campo de control de dias - 
         # descartamos los que no encuentra y oportunidades futuras - deduplicamos citas escogiendo op mas cercana]
         df_target_aux = ((citas_cons
-                            .loc[lambda x: pd.to_datetime(x.created_date).dt.normalize().ge(datetime(2026,8,17))]
-                            .loc[lambda x: x.opportunity_id.isna()]
-                            .loc[lambda x: x.id_am.notna()]
-                            .loc[lambda x: x.rol.isin(['comprador','desconocido'])])
                             .assign(id_am  = lambda x: pd.to_numeric(x.id_am, errors='coerce').astype('Int64'))
+                            )
+                            .loc[lambda x: pd.to_datetime(x.created_date).dt.normalize().ge(datetime(2026,8,17))]
+                            .loc[lambda x: x.opportunity_id.isna() | x.opportunity_id.eq(-1)]
+                            .loc[lambda x: x.id_am.notna() & x.id_am.ne(-1)]
+                            .loc[lambda x: x.rol.isin(['comprador','desconocido'])]
                         .merge((oppss_reporte
-                                    [['id_am_comprador','opportunity_created_date','perf_bc_score','perf_intencion_pago']]
+                                    .rename(columns = {'owner_id':'opportunity_owner_id'})
+                                    [['id_am_comprador'] + CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]
                                     .assign(id_am_comprador  = lambda x: pd.to_numeric(x.id_am_comprador, errors='coerce').astype('Int64'))
-                                    .rename(columns = {'id_am_comprador':'id_am',
-                                                        'opportunity_created_date':'opportunity_created_date_aux',
-                                                        'perf_bc_score':'perf_bc_score_aux',
-                                                        'perf_intencion_pago':'perf_intencion_pago_aux'})
-                                    .loc[lambda x: x.id_am.notna()]
+                                    .rename(columns = {'id_am_comprador':'id_am'}
+                                                    | {COL: COL+'_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
+                                            )
+                                    .loc[lambda x: x.id_am.notna() & x.id_am.ne(-1)]
                                 ),
                                 how='left',
                                 on='id_am'
                                 )
                         .assign(
-                            diff_op_cita = lambda x: (pd.to_datetime(x.created_date).dt.normalize() - pd.to_datetime(x.opportunity_created_date_aux).dt.normalize()).dt.days
+                            diff_op_cita = lambda x: (pd.to_datetime(x.created_date).dt.normalize() - pd.to_datetime(x.opportunity_created_date_relleno).dt.normalize()).dt.days
                             )
-                        .loc[lambda x: x.opportunity_created_date_aux.notna()]
+                        .loc[lambda x: x.opportunity_created_date_relleno.notna()]
                         .loc[lambda x: x.diff_op_cita.ge(0)]
                         .sort_values(['numero_cita', 'diff_op_cita'], ascending = [False, True])
                         .drop_duplicates(subset=['numero_cita'],keep='first')
-                        [['numero_cita','perf_bc_score_aux','perf_intencion_pago_aux']]
+                        [['numero_cita'] + [COL+'_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]]
                         )
         citas_cons = (citas_cons
                         .merge(df_target_aux,
@@ -984,9 +991,10 @@ class ProcessedCrmAtlas:
                                 on='numero_cita'
                                 )
                         .assign(
-                            perf_intencion_pago = lambda x: x.perf_intencion_pago.fillna(x.perf_intencion_pago_aux),
-                            perf_bc_score = lambda x: x.perf_bc_score.fillna(x.perf_bc_score_aux)
+                            flag_oppid_origen_nulo = lambda x: (x.opportunity_id.isna() | x.opportunity_id.eq(-1))*1,
+                            **{COL: lambda x, COL=COL: x[COL].fillna(x[COL+'_relleno']) for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
                             )
+                        .drop(columns = [COL + '_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR])
                     )
 
         # agregamos etiquetas de agrupacion operativa y damos orden final al df
