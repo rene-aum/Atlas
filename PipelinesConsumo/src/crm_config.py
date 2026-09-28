@@ -489,6 +489,20 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'flag_cita_show_comprador',
     'flag_booker_origen_nulo'
 ]
+# la siguiente variable indica que columnas (relacionadas a la oportunidad) del accitas se rellenan buscando el ultimo perfilamiento del cliente cuya cita no tiene id oportunidad
+CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR = [
+    'opportunity_id',
+    'opportunity_name',
+    'opportunity_owner_id',
+    'opportunity_owner',
+    'opportunity_owner_equipo',
+    'opportunity_source',
+    'opportunity_source_aux',
+    'opportunity_stage',
+    'fecha_asignacion',
+    'perf_intencion_pago',
+    'perf_bc_score'
+]
 
 REPORTE_VENTAS_COLUMNS = [
     'sf_order_id',

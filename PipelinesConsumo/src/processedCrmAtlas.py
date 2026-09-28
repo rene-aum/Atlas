@@ -21,6 +21,7 @@ try:
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
         CRM_CRITERIOS_SHOW_CITAS,
         CRM_CRITERIOS_HISTSHOW_CITAS,
+        CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR,
         REPORTE_VENTAS_COLUMNS
     )
     from PipelinesConsumo.src.constants import mexico_tz
@@ -41,6 +42,7 @@ except ModuleNotFoundError:
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
         CRM_CRITERIOS_SHOW_CITAS,
         CRM_CRITERIOS_HISTSHOW_CITAS,
+        CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR,
         REPORTE_VENTAS_COLUMNS
     )
     from src.constants import mexico_tz
@@ -952,19 +954,21 @@ class ProcessedCrmAtlas:
         # [escogemos lineas a rellenar - cruzamos cuidando nulos - creamos campo de control de dias - 
         # descartamos los que no encuentra y oportunidades futuras - deduplicamos citas escogiendo op mas cercana]
         df_target_aux = ((citas_cons
+                            .assign(id_am  = lambda x: pd.to_numeric(x.id_am, errors='coerce').astype('Int64'))
+                            )
                             .loc[lambda x: pd.to_datetime(x.created_date).dt.normalize().ge(datetime(2026,8,17))]
                             .loc[lambda x: x.opportunity_id.isna()]
-                            .loc[lambda x: x.id_am.notna()]
-                            .loc[lambda x: x.rol.isin(['comprador','desconocido'])])
-                            .assign(id_am  = lambda x: pd.to_numeric(x.id_am, errors='coerce').astype('Int64'))
+                            .loc[lambda x: x.id_am.notna() & x.id_am.ne(-1)]
+                            .loc[lambda x: x.rol.isin(['comprador','desconocido'])]
                         .merge((oppss_reporte
-                                    [['id_am_comprador','opportunity_created_date','perf_bc_score','perf_intencion_pago']]
+                                    [['id_am_comprador','opportunity_created_date'] + CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]
                                     .assign(id_am_comprador  = lambda x: pd.to_numeric(x.id_am_comprador, errors='coerce').astype('Int64'))
                                     .rename(columns = {'id_am_comprador':'id_am',
-                                                        'opportunity_created_date':'opportunity_created_date_aux',
-                                                        'perf_bc_score':'perf_bc_score_aux',
-                                                        'perf_intencion_pago':'perf_intencion_pago_aux'})
-                                    .loc[lambda x: x.id_am.notna()]
+                                                        'opportunity_created_date':'opportunity_created_date_aux'}
+                                                        |
+                                                        {COL: COL+'_aux' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
+                                                        )
+                                    .loc[lambda x: x.id_am.notna() & x.id_am.ne(-1)]
                                 ),
                                 how='left',
                                 on='id_am'
@@ -976,7 +980,7 @@ class ProcessedCrmAtlas:
                         .loc[lambda x: x.diff_op_cita.ge(0)]
                         .sort_values(['numero_cita', 'diff_op_cita'], ascending = [False, True])
                         .drop_duplicates(subset=['numero_cita'],keep='first')
-                        [['numero_cita','perf_bc_score_aux','perf_intencion_pago_aux']]
+                        [['numero_cita'] + [COL+'_aux' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]]
                         )
         citas_cons = (citas_cons
                         .merge(df_target_aux,
@@ -984,9 +988,9 @@ class ProcessedCrmAtlas:
                                 on='numero_cita'
                                 )
                         .assign(
-                            perf_intencion_pago = lambda x: x.perf_intencion_pago.fillna(x.perf_intencion_pago_aux),
-                            perf_bc_score = lambda x: x.perf_bc_score.fillna(x.perf_bc_score_aux)
+                            **{COL: lambda x, COL=COL: x[COL].fillna(x[COL+'_aux']) for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
                             )
+                        .drop(columns = [COL + '_aux' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR])
                     )
 
         # agregamos etiquetas de agrupacion operativa y damos orden final al df
