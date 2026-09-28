@@ -971,9 +971,9 @@ class ProcessedCrmAtlas:
                                     [['id_am_comprador','opportunity_created_date'] + CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]
                                     .assign(id_am_comprador  = lambda x: pd.to_numeric(x.id_am_comprador, errors='coerce').astype('Int64'))
                                     .rename(columns = {'id_am_comprador':'id_am',
-                                                        'opportunity_created_date':'opportunity_created_date_aux'}
+                                                        'opportunity_created_date':'opportunity_created_date_relleno'}
                                                         |
-                                                        {COL: COL+'_aux' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
+                                                        {COL: COL+'_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
                                                         )
                                     .loc[lambda x: x.id_am.notna() & x.id_am.ne(-1)]
                                 ),
@@ -981,13 +981,13 @@ class ProcessedCrmAtlas:
                                 on='id_am'
                                 )
                         .assign(
-                            diff_op_cita = lambda x: (pd.to_datetime(x.created_date).dt.normalize() - pd.to_datetime(x.opportunity_created_date_aux).dt.normalize()).dt.days
+                            diff_op_cita = lambda x: (pd.to_datetime(x.created_date).dt.normalize() - pd.to_datetime(x.opportunity_created_date_relleno).dt.normalize()).dt.days
                             )
-                        .loc[lambda x: x.opportunity_created_date_aux.notna()]
+                        .loc[lambda x: x.opportunity_created_date_relleno.notna()]
                         .loc[lambda x: x.diff_op_cita.ge(0)]
                         .sort_values(['numero_cita', 'diff_op_cita'], ascending = [False, True])
                         .drop_duplicates(subset=['numero_cita'],keep='first')
-                        [['numero_cita'] + [COL+'_aux' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]]
+                        [['numero_cita'] + [COL+'_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]]
                         )
         citas_cons = (citas_cons
                         .merge(df_target_aux,
@@ -995,9 +995,9 @@ class ProcessedCrmAtlas:
                                 on='numero_cita'
                                 )
                         .assign(
-                            **{COL: lambda x, COL=COL: x[COL].fillna(x[COL+'_aux']) for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
+                            **{COL: lambda x, COL=COL: x[COL].fillna(x[COL+'_relleno']) for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
                             )
-                        .drop(columns = [COL + '_aux' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR])
+                        .drop(columns = [COL + '_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR])
                     )
 
         # agregamos etiquetas de agrupacion operativa y damos orden final al df
