@@ -950,6 +950,7 @@ class ProcessedCrmAtlas:
                                   cancelado_por_equipo = lambda x: x.cancelado_por_equipo.mask(~x.status.str.contains('cancelado', na=False))
                                  )
                         )
+        print(citas_cons.columns)
         # rellena perfilamientos faltantes a partir del id_am en oportunidades 
         # [escogemos lineas a rellenar - cruzamos cuidando nulos - creamos campo de control de dias - 
         # descartamos los que no encuentra y oportunidades futuras - deduplicamos citas escogiendo op mas cercana]
