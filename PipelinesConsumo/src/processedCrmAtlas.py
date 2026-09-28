@@ -966,13 +966,11 @@ class ProcessedCrmAtlas:
                             .loc[lambda x: x.rol.isin(['comprador','desconocido'])]
                         .merge((oppss_reporte
                                     .rename(columns = {'owner_id':'opportunity_owner_id'})
-                                    [['id_am_comprador','opportunity_created_date'] + CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]
+                                    [['id_am_comprador'] + CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]
                                     .assign(id_am_comprador  = lambda x: pd.to_numeric(x.id_am_comprador, errors='coerce').astype('Int64'))
-                                    .rename(columns = {'id_am_comprador':'id_am',
-                                                        'opportunity_created_date':'opportunity_created_date_relleno'}
-                                                        |
-                                                        {COL: COL+'_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
-                                                        )
+                                    .rename(columns = {'id_am_comprador':'id_am'}
+                                                    | {COL: COL+'_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
+                                            )
                                     .loc[lambda x: x.id_am.notna() & x.id_am.ne(-1)]
                                 ),
                                 how='left',

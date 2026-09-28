@@ -494,6 +494,7 @@ CRM_REPORTE_CITAS_COLUMNS = [
 CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR = [
     'opportunity_id',
     'opportunity_name',
+    'opportunity_created_date',
     'opportunity_owner_id',
     'opportunity_owner',
     'opportunity_owner_equipo',
