@@ -963,7 +963,7 @@ class ProcessedCrmAtlas:
                             .assign(id_am  = lambda x: pd.to_numeric(x.id_am, errors='coerce').astype('Int64'))
                             )
                             .loc[lambda x: pd.to_datetime(x.created_date).dt.normalize().ge(datetime(2026,8,17))]
-                            .loc[lambda x: x.opportunity_id.isna()]
+                            .loc[lambda x: x.opportunity_id.isna() | x.opportunity_id.eq(-1)]
                             .loc[lambda x: x.id_am.notna() & x.id_am.ne(-1)]
                             .loc[lambda x: x.rol.isin(['comprador','desconocido'])]
                         .merge((oppss_reporte
@@ -995,6 +995,7 @@ class ProcessedCrmAtlas:
                                 on='numero_cita'
                                 )
                         .assign(
+                            flag_oppid_origen_nulo = lambda x: (x.opportunity_id.isna() | x.opportunity_id.eq(-1))*1,
                             **{COL: lambda x, COL=COL: x[COL].fillna(x[COL+'_relleno']) for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR}
                             )
                         .drop(columns = [COL + '_relleno' for COL in CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR])
