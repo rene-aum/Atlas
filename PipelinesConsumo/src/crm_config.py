@@ -487,7 +487,8 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'flag_duplicada',
     'flag_cita_agendada_comprador',
     'flag_cita_show_comprador',
-    'flag_booker_origen_nulo'
+    'flag_booker_origen_nulo',
+    'flag_oppid_origen_nulo'
 ]
 # la siguiente variable indica que columnas (relacionadas a la oportunidad) del accitas se rellenan buscando el ultimo perfilamiento del cliente cuya cita no tiene id oportunidad
 CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR = [
