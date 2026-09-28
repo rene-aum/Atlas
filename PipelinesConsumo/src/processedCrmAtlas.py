@@ -758,7 +758,7 @@ class ProcessedCrmAtlas:
                       .assign(opportunity_created_date = pd.to_datetime(oppss_reporte.opportunity_created_date, format='%Y-%m-%d %H:%M').dt.strftime('%Y-%m-%d'),
                               fecha_asignacion = pd.to_datetime(oppss_reporte.fecha_asignacion, format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
                              )
-                        [['opportunity_id', 'owner_id', 'opportunity_owner','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
+                        [['opportunity_id', 'opportunity_name', 'owner_id', 'opportunity_owner','opportunity_owner_equipo','perf_bc_score', 'perf_intencion_pago', 'opportunity_stage',
                          'opportunity_created_date','fecha_asignacion','id_am_comprador','opportunity_source','opportunity_source_aux']]
                         )
 
@@ -961,6 +961,7 @@ class ProcessedCrmAtlas:
                             .loc[lambda x: x.id_am.notna() & x.id_am.ne(-1)]
                             .loc[lambda x: x.rol.isin(['comprador','desconocido'])]
                         .merge((oppss_reporte
+                                    .renam(columns = {'owner_id':'opportunity_owner_id'})
                                     [['id_am_comprador','opportunity_created_date'] + CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR]
                                     .assign(id_am_comprador  = lambda x: pd.to_numeric(x.id_am_comprador, errors='coerce').astype('Int64'))
                                     .rename(columns = {'id_am_comprador':'id_am',
