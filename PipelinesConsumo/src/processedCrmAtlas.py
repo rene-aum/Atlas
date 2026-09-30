@@ -1324,7 +1324,7 @@ class ProcessedCrmAtlas:
                 f"duplicados. Ejemplos: {sample_ids}"
             )
 
-    def add_kpis_perfilamiento_sales_center(self, reporte_oportunidades):
+    def add_kpis_perfilamiento_sales_center(self, reporte_oportunidades, reporte_historico_oportunidades):
         """
         Add Sales Center profiling flags and activity dates to opportunities.
 
@@ -1338,8 +1338,18 @@ class ProcessedCrmAtlas:
             self._normalize_value(equipo)
             for equipo in CRM_EQUIPOS_SALES_CENTER
         ]
+
+        negociacion = (reporte_historico_oportunidades
+               [lambda x:x.new_value.isin(['negotiation','negociacion'])]
+               .drop_duplicates(subset='opportunity_id')
+               
+               )
+        formalizacion = (reporte_historico_oportunidades
+                    [lambda x:x.new_value.isin(['formalizacion'])]
+                    .drop_duplicates(subset='opportunity_id')
+                    )
         
-        reporte = reporte_oportunidades.copy()
+        reporte = reporte_oportunidades.copy()[lambda x: x.opportunity_created_date>='2026-08-01']
         fecha_asignacion = pd.to_datetime(reporte["fecha_asignacion"],dayfirst=True).dt.strftime('%Y-%m-%d')
         fecha_caso_tomado = pd.to_datetime(reporte["fecha_caso_tomado_sc"]).dt.strftime('%Y-%m-%d')
         fecha_primer_contacto = (pd.to_datetime(
@@ -1499,15 +1509,34 @@ class ProcessedCrmAtlas:
                                                             ],
                                                             default="",
                                                         ),
+         kpi_flag_cita_agendada_any = lambda x: (x.flag_cita_agendada_oportunidad.eq(1)|x.flag_cita_sin_pedido_agendada.eq(1)).astype(int),
+         kpi_flag_show_any = lambda x: (x.flag_cita_sin_pedido_show.eq(1)|x.flag_cita_show_oportunidad.eq(1)).astype(int),
+         kpi_flag_negociacion = lambda x: x.opportunity_id.isin(negociacion.opportunity_id.unique()).astype(int),
+         kpi_flag_formalizacion = lambda x: x.opportunity_id.isin(formalizacion.opportunity_id.unique()).astype(int),
+         kpi_flag_ganada = lambda x: x.opportunity_stage.eq('cerrada (ganada)').astype(int),
+         flag_opp_abierta = lambda x: (~x.opportunity_stage.isin(['cerrada (ganada)','cerrada (perdida)'])).astype(int)
             
-
         )
+        # correccion propagacion etapa avanzada hacia atras
+        .assign(
+        kpi_flag_formalizacion=lambda x: (
+            x.kpi_flag_formalizacion.eq(1) | x.kpi_flag_ganada.eq(1)
+        ).astype(int),
+
+        kpi_flag_negociacion=lambda x: (
+            x.kpi_flag_negociacion.eq(1) | x.kpi_flag_formalizacion.eq(1)
+        ).astype(int),
+
+        kpi_flag_show_any=lambda x: (
+            x.kpi_flag_show_any.eq(1) | x.kpi_flag_negociacion.eq(1)
+        ).astype(int),
+            )
         .drop(columns=['aux_aprobado_1','aux_aprobado_2',
-                       'kpi_sales_center_flag_puc_kuna_aprobado','kpi_sales_center_flag_puc_bbva_aprobado',
-                       'kpi_sales_center_flag_puc_kuna_rechazado','kpi_sales_center_flag_puc_eda',
-                       'kpi_sales_center_flag_puc_pasa_eam_700','kpi_sales_center_flag_puc_no_apto',
-                       
-                       ])
+            'kpi_sales_center_flag_puc_kuna_aprobado','kpi_sales_center_flag_puc_bbva_aprobado',
+            'kpi_sales_center_flag_puc_kuna_rechazado','kpi_sales_center_flag_puc_eda',
+            'kpi_sales_center_flag_puc_pasa_eam_700','kpi_sales_center_flag_puc_no_apto',
+            'kpi_sales_center_flag_no_acepta_kuna','kpi_sales_center_flag_bbva_sin_folio_650'
+            ])
         )
         return resultado
 
