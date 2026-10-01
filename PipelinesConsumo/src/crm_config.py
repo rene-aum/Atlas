@@ -404,6 +404,7 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "flag_caso_tomado_perf_sc",
     "asesor_caso_tomado_perf_sc",
     "equipo_asesor_caso_tomado_perf_sc",
+    "fecha_asignacion_perfilamiento_sc",
     "fecha_caso_tomado_sc",
     "case_owner_name_perf_sc",
     "case_owner_id_perf_sc",

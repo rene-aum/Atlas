@@ -58,6 +58,7 @@ class ProcessedCrmAtlas:
     SALES_CENTER_KPI_REQUIRED_COLUMNS = {
         "opportunity_id",
         "fecha_asignacion",
+        "fecha_asignacion_perfilamiento_sc",
         "case_owner_equipo_perf_sc",
         "equipo_asesor_caso_tomado_perf_sc",
         "fecha_caso_tomado_sc",
@@ -501,6 +502,30 @@ class ProcessedCrmAtlas:
                 "asesor_caso_tomado_perf_sc", "fecha_caso_tomado_sc"]]
         )
 
+        fecha_asignacion_sc = ( historico_casos[
+                            lambda x: x.case_id.isin(
+                                casos_perfilamiento_sc["case_id_perfilamiento_sc"].dropna(
+                                ).unique()
+                            )
+                        ]
+        
+                        [
+                            lambda x: x.field.eq("owner")
+                            & x.old_value.eq("caso de servicio")
+                             & ~x.new_value.eq("caso de servicio")
+                        ]
+            .rename(columns={"case_id": "case_id_perfilamiento_sc",
+                             "created_date": "hora_asignacion_perfilamiento_sc"}
+                    )
+            .assign(
+                    fecha_asignacion_perfilamiento_sc=lambda x: pd.to_datetime(x.hora_asignacion_perfilamiento_sc).dt.strftime(
+                        "%Y-%m-%d"
+                    )
+                    )
+            [["case_id_perfilamiento_sc", "fecha_asignacion_perfilamiento_sc"]]
+
+        )
+
         asesor_perfilamiento_credito = (
             historico_casos[
                 lambda x: x.case_id.isin(
@@ -678,6 +703,7 @@ class ProcessedCrmAtlas:
                 how="left",
             )
             .merge(asesor_perfilamiento_sc, on="case_id_perfilamiento_sc", how="left")
+            .merge(fecha_asignacion_sc,on="case_id_perfilamiento_sc", how="left")
             .merge(catalogo_usuarios[['id', 'equipo']], left_on='asesor_perfilamiento_sc_id', right_on='id', how='left')
             .rename(columns={'equipo': 'equipo_asesor_caso_tomado_perf_sc',
                              })
@@ -724,6 +750,7 @@ class ProcessedCrmAtlas:
                     .merge(origen_credito_calculado_df,on='opportunity_id',how='left')
                     .assign(opportunity_source_aux = lambda x: x['opportunity_source_calculado'])
                     .drop(columns=['opportunity_source_calculado'])
+                    [lambda x: x.opportunity_created_date_day >= '2026-07-01'] 
                    )
 
         reporte = self._calcular_opportunity_source_aux_apartados_sin_simulacion(reporte) # puc
@@ -1381,7 +1408,7 @@ class ProcessedCrmAtlas:
                     )
         
         reporte = reporte_oportunidades.copy()[lambda x: x.opportunity_created_date>='2026-08-01']
-        fecha_asignacion = pd.to_datetime(reporte["fecha_asignacion"],dayfirst=True).dt.strftime('%Y-%m-%d')
+        fecha_asignacion_perfilamiento_sc = pd.to_datetime(reporte["fecha_asignacion_perfilamiento_sc"],dayfirst=True).dt.strftime('%Y-%m-%d')
         fecha_caso_tomado = pd.to_datetime(reporte["fecha_caso_tomado_sc"]).dt.strftime('%Y-%m-%d')
         fecha_primer_contacto = (pd.to_datetime(
                                     reporte["perf_fecha_primer_contacto"],
@@ -1389,7 +1416,7 @@ class ProcessedCrmAtlas:
                                 ).dt.strftime('%Y-%m-%d')
                                 )
         resultado = (reporte.assign(
-            fecha_asignacion=fecha_asignacion,
+            fecha_asignacion=fecha_asignacion_perfilamiento_sc,
             perf_comentarios = lambda x: x.perf_comentarios.fillna('').str.lower(),
             perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago),
             perf_bc_score = lambda x: pd.to_numeric(x.perf_bc_score,errors='coerce').astype(float),
