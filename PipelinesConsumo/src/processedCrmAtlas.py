@@ -21,6 +21,7 @@ try:
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
         CRM_CRITERIOS_SHOW_CITAS,
         CRM_CRITERIOS_HISTSHOW_CITAS,
+        CRM_CRITERIOS_CITA_CANCELADA,
         CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR,
         REPORTE_VENTAS_COLUMNS
     )
@@ -42,6 +43,7 @@ except ModuleNotFoundError:
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
         CRM_CRITERIOS_SHOW_CITAS,
         CRM_CRITERIOS_HISTSHOW_CITAS,
+        CRM_CRITERIOS_CITA_CANCELADA,
         CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR,
         REPORTE_VENTAS_COLUMNS
     )
@@ -930,7 +932,7 @@ class ProcessedCrmAtlas:
         citas_cons = (citas_cons
                         .merge((hcitas_proc
                                     .loc[lambda x: x['field']=='status']
-                                    .loc[lambda x: x.new_value.isin(['canceled','canceledbuyer','canceledseller'])]
+                                    .loc[lambda x: x.new_value.isin(CRM_CRITERIOS_CITA_CANCELADA)]
                                     .rename(columns = {'new_value':'status_cancelacion','booker_id':'cancelado_por_id','booker_name':'cancelado_por'})
                                     .assign(created_date = lambda x: pd.to_datetime(x.created_date))
                                     .sort_values(by='created_date',ascending=False)
@@ -948,10 +950,10 @@ class ProcessedCrmAtlas:
                                 how = 'left',
                                 on='cancelado_por_id'
                                 )
-                          .assign(status_cancelacion = lambda x: x.status_cancelacion.mask(~x.status.str.contains('cancelado', na=False)),
-                                  cancelado_por_id = lambda x: x.cancelado_por_id.mask(~x.status.str.contains('cancelado', na=False)),
-                                  cancelado_por = lambda x: x.cancelado_por.mask(~x.status.str.contains('cancelado', na=False)),
-                                  cancelado_por_equipo = lambda x: x.cancelado_por_equipo.mask(~x.status.str.contains('cancelado', na=False))
+                          .assign(status_cancelacion = lambda x: x.status_cancelacion.mask(~x.status.str.contains(r'cancelado|no show', regex=True, na=False)),
+                                  cancelado_por_id = lambda x: x.cancelado_por_id.mask(~x.status.str.contains(r'cancelado|no show', regex=True, na=False)),
+                                  cancelado_por = lambda x: x.cancelado_por.mask(~x.status.str.contains(r'cancelado|no show', regex=True, na=False)),
+                                  cancelado_por_equipo = lambda x: x.cancelado_por_equipo.mask(~x.status.str.contains(r'cancelado|no show', regex=True, na=False))
                                  )
                         )
         # rellena perfilamientos faltantes a partir del id_am en oportunidades 

@@ -8,7 +8,12 @@ one place, instead of being hidden inside notebook cells.
 ID_AM_DUMMIES = [1067687,
                  1067696,
                  1067711,
-                 1067720]
+                 1067720,
+                 1067648,
+                 1067654,
+                 1067669,
+                 1067678
+                 ]
 
 CRM_SOURCE_FOLDER_ID = "17jg82rYHkuGf2Vbx_HIvEWNjQuRZvulv"
 
@@ -316,6 +321,14 @@ CRM_CRITERIOS_HISTSHOW_CITAS = [
     'completed',
     'in progress'
     ]
+CRM_CRITERIOS_CITA_CANCELADA = [
+    'canceled',
+    'canceledbuyer',
+    'canceledseller',
+    'noshowbuyer',
+    'noshowseller',
+    'no show - buyer'
+]
 
 ############### CONFIGURACION DE OUTPUTS ########################
 
