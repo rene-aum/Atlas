@@ -546,3 +546,35 @@ REPORTE_VENTAS_COLUMNS = [
     'opportunity_created_date_day',
     'opportunity_source'
 ]
+
+CRM_KPIS_CITAS_COLUMNS = [
+    'numero_cita',
+    'created_date',
+    'status',
+    'sf_order_id',
+    'rol',
+    'work_type_name',
+    'id_am',
+    'nombre',
+    'email',
+    'espacio_cita',
+    'sched_date',
+    'opportunity_id',
+    'opportunity_created_date',
+    'opportunity_owner_equipo',
+    'opportunity_source',
+    'opportunity_source_aux',
+    'opportunity_stage',
+    'fecha_asignacion',
+    'perf_intencion_pago',
+    'kpi_sales_center_puc_resultado',
+    'kpi_sales_center_puc_avanza',
+    'booker_name',
+    'booker_equipo_operativo',
+    'status_cancelacion',
+    'cancelado_por_equipo_operativo',
+    'flag_dummy',
+    'flag_cita_agendada_comprador',
+    'flag_cita_show_comprador',
+    'flag_venta_finanzas'
+    ]
