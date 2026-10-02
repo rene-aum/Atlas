@@ -307,6 +307,12 @@ CRM_EQUIPOS_SALES_CENTER = [
     "celula credito",
 ]
 
+CRM_EQUIPOS_OPERATIVOS = {
+    **dict.fromkeys(CRM_EQUIPOS_ESPACIOS, 'espacios fisicos'),
+    **dict.fromkeys(CRM_EQUIPOS_SALES_CENTER, 'sales center'),
+    'integration user': 'integration user',
+}
+
 CRM_CRITERIOS_AGENDAMIENTO_CITAS = {
     'rol': ['desconocido', 'comprador'],
     'wtn': ['desconocido', 'cita inicial visita comprador']
