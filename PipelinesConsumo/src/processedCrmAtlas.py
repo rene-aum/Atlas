@@ -264,7 +264,8 @@ class ProcessedCrmAtlas:
                 ),
                 territorio_cita=lambda x: self._normalize_series(x.territorio_cita),
                 fecha_reagendamiento = lambda x: self._to_datetime_str(x.fecha_reagendamiento,
-                    fmt_string="%Y-%m-%d %H:%M")
+                    fmt_string="%Y-%m-%d %H:%M"),
+                motivo_cancelacion=lambda x: self._normalize_series(x.motivo_cancelacion)
             )
         )
         return citas
