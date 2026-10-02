@@ -1377,7 +1377,7 @@ class ProcessedCrmAtlas:
                     )
         
         reporte = reporte_oportunidades.copy()[lambda x: x.opportunity_created_date>='2026-08-01']
-        fecha_asignacion_perfilamiento_sc = pd.to_datetime(reporte["fecha_asignacion_perfilamiento_sc"],dayfirst=True).dt.strftime('%Y-%m-%d')
+        fecha_asignacion_perfilamiento_sc = pd.to_datetime(reporte["fecha_asignacion_perfilamiento_sc"]).dt.strftime('%Y-%m-%d')
         fecha_caso_tomado = pd.to_datetime(reporte["fecha_caso_tomado_sc"]).dt.strftime('%Y-%m-%d')
         fecha_primer_contacto = (pd.to_datetime(
                                     reporte["perf_fecha_primer_contacto"],
