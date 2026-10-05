@@ -753,7 +753,8 @@ class ProcessedCrmAtlas:
                     .merge(origen_credito_calculado_df,on='opportunity_id',how='left')
                     .assign(opportunity_source_aux = lambda x: x['opportunity_source_calculado'])
                     .drop(columns=['opportunity_source_calculado'])
-                    [lambda x: x.opportunity_created_date_day >= '2026-07-01'] 
+                    [lambda x: x.opportunity_created_date_day >= '2026-07-01']
+                    [lambda x: ~x.id_am_comprador.isin(ID_AM_DUMMIES)] 
                    )
 
         reporte = self._calcular_opportunity_source_aux_apartados_sin_simulacion(reporte) # puc
