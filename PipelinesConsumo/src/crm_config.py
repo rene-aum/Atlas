@@ -166,7 +166,8 @@ CRM_RENAME_DICTS = {
         "ServiceTerritory.Name": "territorio_cita",
         "MX_ATN_Fecha_Checkin__c":"fecha_checkin",
         "MX_ATN_Fecha_Checkout__c":"fecha_checkout",
-        "MX_ATN_RescheduleDate__c":"fecha_reagendamiento"
+        "MX_ATN_RescheduleDate__c":"fecha_reagendamiento",
+        "CancellationReason": "motivo_cancelacion"
     },
     "solicitudes_credito": {
         "MX_ATN_Oportunidad__c": "opportunity_id",
@@ -306,6 +307,12 @@ CRM_EQUIPOS_SALES_CENTER = [
     "mid",
     "celula credito",
 ]
+
+CRM_EQUIPOS_OPERATIVOS = {
+    **dict.fromkeys(CRM_EQUIPOS_ESPACIOS, 'espacios fisicos'),
+    **dict.fromkeys(CRM_EQUIPOS_SALES_CENTER, 'sales center'),
+    'integration user': 'integration user',
+}
 
 CRM_CRITERIOS_AGENDAMIENTO_CITAS = {
     'rol': ['desconocido', 'comprador'],
@@ -490,6 +497,7 @@ CRM_REPORTE_CITAS_COLUMNS = [
     'booker_equipo',
     'booker_equipo_operativo',
     'status_cancelacion',
+    'motivo_cancelacion',
     'cancelado_por_id',
     'cancelado_por',
     'cancelado_por_equipo',

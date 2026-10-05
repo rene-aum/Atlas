@@ -17,6 +17,7 @@ try:
         CRM_STATUS_PEDIDOS_ABIERTOS,
         CRM_EQUIPOS_SALES_CENTER,
         CRM_EQUIPOS_ESPACIOS,
+        CRM_EQUIPOS_OPERATIVOS,
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
@@ -40,6 +41,7 @@ except ModuleNotFoundError:
         CRM_STATUS_PEDIDOS_ABIERTOS,
         CRM_EQUIPOS_SALES_CENTER,
         CRM_EQUIPOS_ESPACIOS,
+        CRM_EQUIPOS_OPERATIVOS,
         CRM_WORK_TYPES_COMPRADOR,
         CRM_WORK_TYPES_VENDEDOR,
         CRM_CRITERIOS_AGENDAMIENTO_CITAS,
@@ -262,7 +264,8 @@ class ProcessedCrmAtlas:
                 ),
                 territorio_cita=lambda x: self._normalize_series(x.territorio_cita),
                 fecha_reagendamiento = lambda x: self._to_datetime_str(x.fecha_reagendamiento,
-                    fmt_string="%Y-%m-%d %H:%M")
+                    fmt_string="%Y-%m-%d %H:%M"),
+                motivo_cancelacion=lambda x: self._normalize_series(x.motivo_cancelacion)
             )
         )
         return citas
@@ -1029,10 +1032,9 @@ class ProcessedCrmAtlas:
                     )
 
         # agregamos etiquetas de agrupacion operativa y damos orden final al df
-        equipo_operativo = {e:'espacios fisicos' for e in CRM_EQUIPOS_ESPACIOS} | {sc: 'sales center' for sc in CRM_EQUIPOS_SALES_CENTER}
         citas_cons = (citas_cons
-                          .assign(booker_equipo_operativo = lambda x: x.booker_equipo.map(equipo_operativo).fillna('desconocido'),
-                                cancelado_por_equipo_operativo = lambda x: x.cancelado_por_equipo.map(equipo_operativo).fillna('desconocido')
+                          .assign(booker_equipo_operativo = lambda x: x.booker_equipo.map(CRM_EQUIPOS_OPERATIVOS).fillna('desconocido'),
+                                cancelado_por_equipo_operativo = lambda x: x.cancelado_por_equipo.map(CRM_EQUIPOS_OPERATIVOS).fillna('desconocido')
                                 )
                           .sort_values(by='numero_cita',ascending=False)
                      )
@@ -1408,7 +1410,7 @@ class ProcessedCrmAtlas:
                     )
         
         reporte = reporte_oportunidades.copy()[lambda x: x.opportunity_created_date>='2026-08-01']
-        fecha_asignacion_perfilamiento_sc = pd.to_datetime(reporte["fecha_asignacion_perfilamiento_sc"],dayfirst=True).dt.strftime('%Y-%m-%d')
+        fecha_asignacion_perfilamiento_sc = pd.to_datetime(reporte["fecha_asignacion_perfilamiento_sc"]).dt.strftime('%Y-%m-%d')
         fecha_caso_tomado = pd.to_datetime(reporte["fecha_caso_tomado_sc"]).dt.strftime('%Y-%m-%d')
         fecha_primer_contacto = (pd.to_datetime(
                                     reporte["perf_fecha_primer_contacto"],
