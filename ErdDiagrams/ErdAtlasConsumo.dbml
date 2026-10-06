@@ -1,0 +1,199 @@
+///////////////////////////////////////////////////////
+// Core customer and publication entities
+///////////////////////////////////////////////////////
+
+Table AcClientes {
+  id_am int [pk, note: 'ID único de usuario en Automarket (Commerce)']
+  billing_firstname varchar
+  billing_lastname varchar
+  nickname varchar
+  email varchar
+  phone varchar
+  zip varchar
+  country varchar
+  state_province varchar
+  customer_since date
+  date_of_birth date
+  phone_number_otp_validated int
+  email_otp_validated int
+}
+
+Table AcPublicaciones {
+  sku varchar [pk, note: 'Identificador del intento de publicación']
+  id_am int 
+  product_name varchar
+  status varchar
+  status_product varchar
+  plate varchar
+  last_commerce_order_id varchar
+  order_created_at datetime
+  vin varchar
+  engine_type varchar
+  created_at varchar
+  published_at datetime
+  km int
+  showroom varchar
+  flag_publicacion_exito int
+  flag_publicacion_activa int
+}
+
+///////////////////////////////////////////////////////
+// Orders / bookings
+///////////////////////////////////////////////////////
+
+Table AcPedidos {
+  sf_order_id int [pk, note: 'ID de pedido en Salesforce']
+  commerce_order_id int
+  nombre_vendedor varchar
+  id_am_vendedor int 
+  nombre_comprador varchar
+  id_am_comprador int 
+  sf_order_status varchar
+  precio_de_publicacion numeric
+  fecha_de_creacion date
+  descripcion_vehiculo varchar
+  vin varchar
+  days_since_last_order int
+  multiapartado int
+}
+
+///////////////////////////////////////////////////////
+// Credit / Bauto integration
+///////////////////////////////////////////////////////
+
+Table AcConsolidadoBautoLastStatus {
+  folio int [pk, note: 'ID de folio de crédito en Bauto']
+  estatusultimaetapa varchar
+  decisionsistema varchar
+  nombreproveedor varchar
+  engancheuno numeric
+  montosolicitado numeric
+  plazo int
+  tareaactual varchar
+  fecha_creacion date
+  origen varchar
+  nombre_cliente varchar
+  telefono varchar
+  email varchar
+  month_base int
+  year_base int
+  month_fecha_creacion int
+  year_fecha_creacion int
+}
+
+///////////////////////////////////////////////////////
+// Web / analytics aggregates
+///////////////////////////////////////////////////////
+
+Table AcVisitasUnicas {
+  date date [pk]
+  fc_visitas_unicas_landing_comprador numeric
+  fc_visitas_unicas_pdp numeric
+  fc_visitas_unicas_plp numeric
+  fv_visitas_unicas_landing_vendedor numeric
+}
+
+Table AcProductViews {
+  date date
+  sku varchar 
+  identified_user_views numeric
+  unidentified_user_views numeric
+
+  Indexes {
+    (date, sku) [pk]
+  }
+}
+
+///////////////////////////////////////////////////////
+// Seller funnel (vendedor) - user level (binary)
+///////////////////////////////////////////////////////
+
+Table AcAdobeFunnelVendedorUsuario {
+  id_am int 
+  date date
+  application_name varchar
+  fv_app_click_start int
+  fv_app_page_visit int
+  fv_app_step_2 int
+  fv_app_step_3 int
+  fv_app_step_4 int
+  fv_app_step_6 int
+  fv_app_step_8 int
+  fv_app_step_9 int
+  fv_app_completed int
+
+  Indexes {
+    (id_am, date, application_name) [pk]
+  }
+}
+
+///////////////////////////////////////////////////////
+// Seller funnel (vendedor) - total hits (includes anonymous)
+///////////////////////////////////////////////////////
+
+Table AcAdobeFunnelVendedorTotal {
+  date date
+  id_am int [note: 'Puede ser NULL para usuarios anónimos']
+  application_name varchar
+  fv_app_click_start numeric
+  fv_app_page_visit numeric
+  fv_app_step_2 numeric
+  fv_app_step_3 numeric
+  fv_app_step_4 numeric
+  fv_app_step_6 numeric
+  fv_app_step_8 numeric
+  fv_app_step_9 numeric
+  fv_app_completed numeric
+
+  Indexes {
+    (date, id_am, application_name) [pk]
+  }
+}
+
+///////////////////////////////////////////////////////
+// Buyer funnel (comprador) - user level (binary)
+///////////////////////////////////////////////////////
+
+Table AcAdobeFunnelCompradorUsuario {
+  id_am int 
+  date date
+  application_name varchar
+  fc_app_click_start int
+  fc_app_page_visit int
+  fc_app_completed int
+
+  Indexes {
+    (id_am, date, application_name) [pk]
+  }
+}
+
+///////////////////////////////////////////////////////
+// Buyer funnel (comprador) - total hits (includes anonymous)
+///////////////////////////////////////////////////////
+
+Table AcAdobeFunnelCompradorTotal {
+  date date
+  id_am int [note: 'Puede ser NULL para usuarios anónimos']
+  application_name varchar
+  fc_app_click_start numeric
+  fc_app_page_visit numeric
+  fc_app_completed numeric
+
+  Indexes {
+    (date, id_am, application_name) [pk]
+  }
+}
+
+// Explicit relationship declarations (optional; already encoded above)
+
+Ref: AcPublicaciones.id_am > AcClientes.id_am
+Ref: AcPedidos.id_am_vendedor > AcClientes.id_am
+Ref: AcPedidos.id_am_comprador > AcClientes.id_am
+Ref: AcProductViews.sku > AcPublicaciones.sku
+Ref: AcAdobeFunnelVendedorUsuario.id_am > AcClientes.id_am
+Ref: AcAdobeFunnelVendedorTotal.id_am > AcClientes.id_am
+Ref: AcAdobeFunnelCompradorUsuario.id_am > AcClientes.id_am
+Ref: AcAdobeFunnelCompradorTotal.id_am > AcClientes.id_am
+Ref: AcPedidos.vin > AcPublicaciones.vin
+Ref: AcPublicaciones.last_commerce_order_id <> AcPedidos.commerce_order_id
+
