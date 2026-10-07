@@ -585,5 +585,6 @@ CRM_KPIS_CITAS_COLUMNS = [
     'flag_dummy',
     'flag_cita_agendada_comprador',
     'flag_cita_show_comprador',
-    'flag_venta_finanzas'
+    'flag_venta_finanzas',
+    'fecha_de_entrega'
     ]

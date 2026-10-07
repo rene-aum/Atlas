@@ -1372,7 +1372,7 @@ class ProcessedCrmAtlas:
             .merge(
                 (reporte_ventas
                     .assign(flag_venta_finanzas = 1)
-                    [['opportunity_id', 'flag_venta_finanzas']]
+                    [['opportunity_id', 'flag_venta_finanzas','fecha_de_entrega']]
                     .drop_duplicates('opportunity_id')
                 ),
                 how='left',
