@@ -456,12 +456,6 @@ class ProcessedCrmAtlas:
 
         Inputs are already-normalized DataFrames from the proc_* methods above.
         """
-        pedidos = pedidos.copy()
-        if 'sf_order_status' in pedidos.columns and 'status' not in pedidos.columns:
-            pedidos = pedidos.rename(columns={'sf_order_status': 'status'})
-        if 'fecha_de_creacion' in pedidos.columns and 'created_date' not in pedidos.columns:
-            pedidos = pedidos.rename(columns={'fecha_de_creacion': 'created_date'})
-
         solicitudes_credito = solicitudes_credito.copy()
         solicitudes_credito['folio'] = pd.to_numeric(solicitudes_credito['folio'], errors='coerce')
 
@@ -622,7 +616,7 @@ class ProcessedCrmAtlas:
         summary_pedidos = (
             pedidos
             .assign(
-                pedidos_abiertos=lambda x: x.status.isin(
+                pedidos_abiertos=lambda x: x.sf_order_status.isin(
                     CRM_STATUS_PEDIDOS_ABIERTOS
                 ).multiply(1)
             )
@@ -630,8 +624,8 @@ class ProcessedCrmAtlas:
             .agg(
                 numero_pedidos=("sf_order_id", "nunique"),
                 numero_pedidos_abiertos=("pedidos_abiertos", "sum"),
-                fecha_primer_pedido=("created_date", "min"),
-                fecha_ultimo_pedido=("created_date", "max"),
+                fecha_primer_pedido=("fecha_de_creacion", "min"),
+                fecha_ultimo_pedido=("fecha_de_creacion", "max"),
             )
         )
         summary_solicitudes = (solicitudes_credito
