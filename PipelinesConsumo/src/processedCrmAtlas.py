@@ -456,6 +456,15 @@ class ProcessedCrmAtlas:
 
         Inputs are already-normalized DataFrames from the proc_* methods above.
         """
+        pedidos = pedidos.copy()
+        if 'sf_order_status' in pedidos.columns and 'status' not in pedidos.columns:
+            pedidos = pedidos.rename(columns={'sf_order_status': 'status'})
+        if 'fecha_de_creacion' in pedidos.columns and 'created_date' not in pedidos.columns:
+            pedidos = pedidos.rename(columns={'fecha_de_creacion': 'created_date'})
+
+        solicitudes_credito = solicitudes_credito.copy()
+        solicitudes_credito['folio'] = pd.to_numeric(solicitudes_credito['folio'], errors='coerce')
+
         casos_perfilamiento_sc = (
             casos[lambda x: x.case_subject.eq(
                 "perfilamiento contact center")]
