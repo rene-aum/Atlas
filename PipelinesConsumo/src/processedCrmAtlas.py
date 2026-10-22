@@ -1430,7 +1430,7 @@ class ProcessedCrmAtlas:
                                             ),
             kpi_sales_center_flag_asignado=lambda x: (
                 x.case_owner_equipo_perf_sc.isin(equipos_sales_center)
-                & (~x.aux_exluir_asignado)
+                & (~x.aux_excluir_asignado)
                 
             ).astype(int),
             kpi_sales_center_fecha_asignado=lambda x: (
