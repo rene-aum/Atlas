@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import pandas as pd
 import numpy as np
 import pytz
 from datetime import datetime
 from unidecode import unidecode
+from typing import Hashable
 
 try:
     from PipelinesConsumo.src.crm_config import (
@@ -660,11 +663,14 @@ class ProcessedCrmAtlas:
             [lambda x: x.old_value.isna() & (x.new_value=='scheduled')]
             .sort_values(by=['numero_cita','created_date'],ascending=[False,True])
             .drop_duplicates(subset=['numero_cita'],keep='first')
-            .merge(catalogo_usuarios[['id','equipo']],left_on='created_by_id',right_on='id',how='left')
-            .drop(columns=['id'])
-            .rename(columns={'created_by':'primer_booker_comprador',
-                            'equipo':'equipo_primer_booker_comprador'
-                            })
+            .pipe(
+                self.add_team_from_scd2,
+                catalogo_usuarios,
+                date_col='created_date',
+                user_id_col='created_by_id',
+                output_col='equipo_primer_booker_comprador',
+            )
+            .rename(columns={'created_by':'primer_booker_comprador'})
             [['numero_cita','primer_booker_comprador','equipo_primer_booker_comprador']]
             )
         primer_booker_df = (citas_comprador_aux
@@ -673,10 +679,13 @@ class ProcessedCrmAtlas:
             )
         reporte = (
             oportunidades
-            .merge(catalogo_usuarios[['id', 'equipo']], left_on='owner_id', right_on='id', how='left')
-            .rename(columns={'equipo': 'opportunity_owner_equipo',
-                             })
-            .drop(columns=["id"])
+            .pipe(
+                self.add_team_from_scd2,
+                catalogo_usuarios,
+                date_col='opportunity_created_date',
+                user_id_col='owner_id',
+                output_col='opportunity_owner_equipo',
+            )
             # .merge(origen_credito_aux, on="opportunity_id", how="left")
             .merge(
                 casos_perfilamiento_sc[
@@ -691,9 +700,14 @@ class ProcessedCrmAtlas:
                 on="opportunity_id",
                 how="left",
             )
-            .merge(catalogo_usuarios[['id', 'equipo']], left_on='case_owner_id_perf_sc', right_on='id', how='left')
-            .rename(columns={'equipo': 'case_owner_equipo_perf_sc'})
-            .drop(columns=["id"])
+            .merge(fecha_asignacion_sc,on="case_id_perfilamiento_sc", how="left")
+            .pipe(
+                self.add_team_from_scd2,
+                catalogo_usuarios,
+                date_col='fecha_asignacion_perfilamiento_sc',
+                user_id_col='case_owner_id_perf_sc',
+                output_col='case_owner_equipo_perf_sc',
+            )
             .merge(
                 casos_perfilamiento_credito[
                     [
@@ -706,20 +720,25 @@ class ProcessedCrmAtlas:
                 how="left",
             )
             .merge(asesor_perfilamiento_sc, on="case_id_perfilamiento_sc", how="left")
-            .merge(fecha_asignacion_sc,on="case_id_perfilamiento_sc", how="left")
-            .merge(catalogo_usuarios[['id', 'equipo']], left_on='asesor_perfilamiento_sc_id', right_on='id', how='left')
-            .rename(columns={'equipo': 'equipo_asesor_caso_tomado_perf_sc',
-                             })
-            .drop(columns=["id"])
+            .pipe(
+                self.add_team_from_scd2,
+                catalogo_usuarios,
+                date_col='fecha_caso_tomado_sc',
+                user_id_col='asesor_perfilamiento_sc_id',
+                output_col='equipo_asesor_caso_tomado_perf_sc',
+            )
             .merge(
                 asesor_perfilamiento_credito,
                 on="case_id_perfilamiento_credito",
                 how="left",
             )
-            .merge(catalogo_usuarios[['id', 'equipo']], left_on='asesor_perfilamiento_credito_id', right_on='id', how='left')
-            .rename(columns={'equipo': 'equipo_asesor_perfilamiento_credito',
-                             })
-            .drop(columns=["id"])
+            .pipe(
+                self.add_team_from_scd2,
+                catalogo_usuarios,
+                date_col='fecha_asignacion_perfilamiento_credito',
+                user_id_col='asesor_perfilamiento_credito_id',
+                output_col='equipo_asesor_perfilamiento_credito',
+            )
             .merge(summary_pedidos, on="opportunity_id", how="left")
             .merge(summary_solicitudes, on="opportunity_id", how="left")
             .merge(summary_citas_comprador, on="opportunity_id", how="left")
@@ -1696,6 +1715,404 @@ class ProcessedCrmAtlas:
             .sort_values("fecha_actividad")
             .reset_index(drop=True)
         )
+
+##########################################################################################################################################
+####################################################### CATALOGO SCD  ####################################################################
+
+    def _calendar_day(self, series: pd.Series, *, column_name: Hashable) -> pd.Series:
+        """Parse a Series and return timezone-naive, normalized timestamps."""
+        nonempty = series.notna() & series.astype("string").str.strip().ne("")
+        try:
+            # pandas 2.x otherwise infers one format from the first non-null value,
+            # which can reject a valid mix of date-only and timestamp strings.
+            parsed = pd.to_datetime(series, errors="coerce", format="mixed")
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Column {column_name!r} cannot be parsed as dates") from exc
+
+        invalid = nonempty & parsed.isna()
+        if invalid.any():
+            examples = series.loc[invalid].head(5).tolist()
+            raise ValueError(
+                f"Column {column_name!r} contains invalid dates; examples: {examples!r}"
+            )
+
+        # The catalog defines validity by calendar day, not by instant. Removing the
+        # timezone after normalization preserves the local calendar date.
+        if isinstance(parsed.dtype, pd.DatetimeTZDtype):
+            parsed = parsed.dt.tz_localize(None)
+        return parsed.dt.normalize()
+
+
+    def _validate_scd2_periods(self, catalog: pd.DataFrame) -> None:
+        """Reject invalid or overlapping inclusive validity periods."""
+        if catalog["_user_id"].isna().any():
+            raise ValueError("The catalog contains a missing user id")
+        if catalog["_start"].isna().any():
+            raise ValueError("The catalog contains a missing start date")
+
+        backwards = catalog["_end"].notna() & (catalog["_end"] < catalog["_start"])
+        if backwards.any():
+            users = catalog.loc[backwards, "_user_id"].astype(str).unique()[:5]
+            raise ValueError(f"Catalog end date precedes start date for: {users.tolist()}")
+
+        duplicated_start = catalog.duplicated(["_user_id", "_start"], keep=False)
+        if duplicated_start.any():
+            users = catalog.loc[duplicated_start, "_user_id"].astype(str).unique()[:5]
+            raise ValueError(
+                f"Catalog has multiple periods beginning on the same date for: "
+                f"{users.tolist()}"
+            )
+
+        for user_id, periods in catalog.groupby("_user_id", sort=False, dropna=False):
+            periods = periods.sort_values("_start")
+            previous_end: pd.Timestamp | None = None
+            previous_is_open = False
+            for start, end in periods[["_start", "_end"]].itertuples(
+                index=False, name=None
+            ):
+                if previous_is_open or (
+                    previous_end is not None and start <= previous_end
+                ):
+                    raise ValueError(
+                        f"Catalog has overlapping inclusive periods for user {user_id!r}"
+                    )
+                previous_is_open = pd.isna(end)
+                previous_end = None if previous_is_open else end
+
+
+    def add_team_from_scd2(
+        self,
+        df: pd.DataFrame,
+        catalog_df: pd.DataFrame,
+        date_col: Hashable,
+        user_id_col: Hashable,
+        *,
+        catalog_user_id_col: Hashable = "id",
+        team_col: Hashable = "equipo",
+        start_col: Hashable = "start_date",
+        end_col: Hashable = "end_date",
+        output_col: Hashable = "equipo",
+        overwrite: bool = False,
+        validate: bool = True,
+    ) -> pd.DataFrame:
+        """Add the team valid on each CRM event's date using an SCD2 catalog.
+
+        The catalog's validity interval is interpreted as inclusive on both ends::
+
+            start date <= event calendar date <= end date
+
+        A missing ``end date`` represents an open-ended current period. Event
+        timestamps are normalized to calendar dates before matching, so an event at
+        23:59 on an end date still belongs to that period.
+
+        Parameters
+        ----------
+        df:
+            CRM/event rows to enrich. The input is not modified.
+        catalog_df:
+            SCD Type 2 user catalog.
+        date_col, user_id_col:
+            Event timestamp and user-id columns in ``df``.
+        catalog_user_id_col, team_col, start_col, end_col:
+            Corresponding columns in ``catalog_df``.
+        output_col:
+            Name of the team column added to the returned DataFrame.
+        overwrite:
+            Permit replacement when ``output_col`` already exists in ``df``.
+        validate:
+            Check the catalog for duplicate starts, invalid periods, and overlaps.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A copy of ``df`` with ``output_col`` added. Unmatched rows receive
+            ``pd.NA``. Original row order and index are preserved.
+        """
+        required_facts = [date_col, user_id_col]
+        required_catalog = [catalog_user_id_col, team_col, start_col, end_col]
+        missing_facts = [column for column in required_facts if column not in df.columns]
+        missing_catalog = [
+            column for column in required_catalog if column not in catalog_df.columns
+        ]
+        if missing_facts:
+            raise KeyError(f"Missing event columns: {missing_facts!r}")
+        if missing_catalog:
+            raise KeyError(f"Missing catalog columns: {missing_catalog!r}")
+        if output_col in df.columns and not overwrite:
+            raise ValueError(
+                f"Output column {output_col!r} already exists; pass overwrite=True "
+                "to replace it"
+            )
+
+        result = df.copy()
+        if result.empty:
+            result[output_col] = pd.Series(pd.NA, index=result.index, dtype="object")
+            return result
+
+        event_dates = self._calendar_day(df[date_col], column_name=date_col)
+        catalog_starts = self._calendar_day(
+            catalog_df[start_col], column_name=start_col
+        )
+        catalog_ends = self._calendar_day(catalog_df[end_col], column_name=end_col)
+
+        events = pd.DataFrame(
+            {
+                "_row_number": range(len(df)),
+                "_user_id": df[user_id_col].astype("string").to_numpy(),
+                "_event_date": event_dates.to_numpy(),
+            }
+        )
+        catalog = pd.DataFrame(
+            {
+                "_user_id": catalog_df[catalog_user_id_col].astype("string").to_numpy(),
+                "_start": catalog_starts.to_numpy(),
+                "_end": catalog_ends.to_numpy(),
+                "_team": catalog_df[team_col].to_numpy(),
+            }
+        )
+
+        if validate:
+            self._validate_scd2_periods(catalog)
+
+        teams = pd.Series(pd.NA, index=range(len(result)), dtype="object")
+        matchable = events[events["_user_id"].notna() & events["_event_date"].notna()]
+
+        if not matchable.empty and not catalog.empty:
+            # merge_asof selects the latest period that started on or before the
+            # event. The end-date check below rejects gaps and expired periods.
+            matched = pd.merge_asof(
+                matchable.sort_values(["_event_date", "_user_id"]),
+                catalog.sort_values(["_start", "_user_id"]),
+                left_on="_event_date",
+                right_on="_start",
+                by="_user_id",
+                direction="backward",
+                allow_exact_matches=True,
+            )
+            within_period = matched["_start"].notna() & (
+                matched["_end"].isna()
+                | (matched["_event_date"] <= matched["_end"])
+            )
+            teams.iloc[matched["_row_number"].to_numpy()] = (
+                matched["_team"].where(within_period, pd.NA).to_numpy()
+            )
+
+        # Assign positionally so duplicated/non-monotonic input indexes remain safe.
+        result[output_col] = teams.to_numpy()
+        return result
+
+    def _same_scalar(self, left: object, right: object) -> bool:
+        """Null-safe equality for two scalar catalog values."""
+        if pd.isna(left) and pd.isna(right):
+            return True
+        if pd.isna(left) or pd.isna(right):
+            return False
+        return bool(left == right)
+
+
+    def _snapshot_day(self, value: object) -> pd.Timestamp:
+        """Parse one required snapshot date and normalize it to a calendar day."""
+        if value is None or (isinstance(value, str) and not value.strip()):
+            raise ValueError("snapshot_date is required")
+        try:
+            parsed = pd.to_datetime(value, errors="raise", format="mixed")
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid snapshot_date: {value!r}") from exc
+        if not isinstance(parsed, pd.Timestamp):
+            raise TypeError("snapshot_date must be one scalar date, not an array-like")
+        if parsed.tz is not None:
+            parsed = parsed.tz_localize(None)
+        return parsed.normalize()
+
+
+    def update_user_scd2(self,
+        scd_catalog: pd.DataFrame,
+        current_snapshot: pd.DataFrame,
+        snapshot_date: object,
+        *,
+        user_id_col: Hashable = "id",
+        team_col: Hashable = "equipo",
+        start_col: Hashable = "start_date",
+        end_col: Hashable = "end_date",
+        current_col: Hashable = "is current",
+        version_col: Hashable = "apariciones id",
+        validate: bool = True,
+    ) -> pd.DataFrame:
+        """Update a user SCD2 catalog from one authoritative daily snapshot.
+
+        Only a change in ``team_col`` creates a new historical version. Users that
+        disappear from the snapshot are intentionally left unchanged. For a team
+        change effective on day ``D``, the old row is closed on ``D - 1 day`` and
+        the new row starts on ``D``. New users receive version 1.
+
+        Snapshot columns that also exist in the SCD catalog (for example ``name``,
+        ``email`` and ``division``) are copied into newly appended versions, but
+        changes in those columns alone do not create history. A corrected snapshot
+        for a version that already starts on ``snapshot_date`` updates that same-day
+        row instead of creating a zero-length period.
+
+        The operation is idempotent: applying the same snapshot again on the same
+        date returns the same catalog without adding rows.
+        """
+        metadata_cols = [start_col, end_col, current_col, version_col]
+        required_scd = [user_id_col, team_col, *metadata_cols]
+        required_snapshot = [user_id_col, team_col]
+        missing_scd = [column for column in required_scd if column not in scd_catalog]
+        missing_snapshot = [
+            column for column in required_snapshot if column not in current_snapshot
+        ]
+        if missing_scd:
+            raise KeyError(f"Missing SCD catalog columns: {missing_scd!r}")
+        if missing_snapshot:
+            raise KeyError(f"Missing snapshot columns: {missing_snapshot!r}")
+
+        effective_day = self._snapshot_day(snapshot_date)
+        result = scd_catalog.copy().reset_index(drop=True)
+        snapshot = current_snapshot.copy().reset_index(drop=True)
+
+        snapshot_keys = snapshot[user_id_col].astype("string")
+        if snapshot_keys.isna().any():
+            raise ValueError("The current snapshot contains a missing user id")
+        duplicate_snapshot_ids = snapshot_keys.duplicated(keep=False)
+        if duplicate_snapshot_ids.any():
+            duplicates = snapshot_keys.loc[duplicate_snapshot_ids].unique()[:5]
+            raise ValueError(
+                f"The current snapshot contains duplicate user ids: "
+                f"{duplicates.tolist()}"
+            )
+
+        result[start_col] = self._calendar_day(result[start_col], column_name=start_col)
+        result[end_col] = self._calendar_day(result[end_col], column_name=end_col)
+        catalog_keys = result[user_id_col].astype("string")
+        if catalog_keys.isna().any():
+            raise ValueError("The SCD catalog contains a missing user id")
+
+        current_values = pd.to_numeric(result[current_col], errors="coerce")
+        invalid_current = current_values.isna() | ~current_values.isin([0, 1])
+        if invalid_current.any():
+            examples = result.loc[invalid_current, current_col].head(5).tolist()
+            raise ValueError(
+                f"Column {current_col!r} must contain only 0/1; examples: {examples!r}"
+            )
+        current_mask = current_values.eq(1)
+
+        versions = pd.to_numeric(result[version_col], errors="coerce")
+        invalid_versions = versions.isna() | (versions < 1) | (versions % 1 != 0)
+        if invalid_versions.any():
+            examples = result.loc[invalid_versions, version_col].head(5).tolist()
+            raise ValueError(
+                f"Column {version_col!r} must contain positive integers; "
+                f"examples: {examples!r}"
+            )
+
+        active_counts = catalog_keys[current_mask].value_counts()
+        if (active_counts > 1).any():
+            duplicates = active_counts[active_counts > 1].index[:5].tolist()
+            raise ValueError(f"Multiple current SCD rows for user ids: {duplicates!r}")
+        if result.loc[current_mask, end_col].notna().any():
+            raise ValueError("A current SCD row cannot have an end date")
+        if result.loc[~current_mask, end_col].isna().any():
+            raise ValueError("A non-current SCD row must have an end date")
+
+        if validate and not result.empty:
+            self._validate_scd2_periods(
+                pd.DataFrame(
+                    {
+                        "_user_id": catalog_keys,
+                        "_start": result[start_col],
+                        "_end": result[end_col],
+                    }
+                )
+            )
+
+        current_position = {
+            catalog_keys.iloc[position]: position
+            for position in range(len(result))
+            if current_mask.iloc[position]
+        }
+        max_version = (
+            pd.DataFrame({"_user_id": catalog_keys, "_version": versions})
+            .groupby("_user_id", sort=False)["_version"]
+            .max()
+            .astype(int)
+            .to_dict()
+        )
+        copied_columns = [
+            column
+            for column in snapshot.columns
+            if column in result.columns and column not in metadata_cols
+        ]
+        rows_to_append: list[dict[Hashable, object]] = []
+
+        for snapshot_position, user_key in enumerate(snapshot_keys):
+            snapshot_row = snapshot.iloc[snapshot_position]
+            active_position = current_position.get(user_key)
+
+            if active_position is not None:
+                active_start = result.at[active_position, start_col]
+                if effective_day < active_start:
+                    raise ValueError(
+                        f"snapshot_date {effective_day.date()} precedes the current "
+                        f"period for user {user_key!r}, which starts on "
+                        f"{active_start.date()}"
+                    )
+
+
+                old_team = result.at[active_position, team_col]
+                new_team = snapshot_row[team_col]
+
+                # Ignore incoming null teams when the current team is non-null.
+                if pd.notna(old_team) and pd.isna(new_team):
+                    continue
+                if pd.isna(old_team) and pd.notna(new_team):
+                    continue
+
+                team_changed = not self._same_scalar(old_team, new_team)
+                if not team_changed:
+                    continue
+
+                if effective_day == active_start:
+                    # A corrected rerun for the same effective day replaces the
+                    # just-created current version rather than adding another one.
+                    for column in copied_columns:
+                        result.at[active_position, column] = snapshot_row[column]
+                    continue
+
+                result.at[active_position, end_col] = effective_day - pd.Timedelta(days=1)
+                result.at[active_position, current_col] = 0
+
+            new_version = max_version.get(user_key, 0) + 1
+            new_row = {column: pd.NA for column in result.columns}
+            for column in copied_columns:
+                new_row[column] = snapshot_row[column]
+            new_row[start_col] = effective_day
+            new_row[end_col] = pd.NaT
+            new_row[current_col] = 1
+            new_row[version_col] = new_version
+            rows_to_append.append(new_row)
+            max_version[user_key] = new_version
+
+        if rows_to_append:
+            print(f'Rows to append: {len(rows_to_append)}')
+            print(pd.DataFrame(rows_to_append, columns=result.columns))
+            result = pd.concat(
+                [result, pd.DataFrame(rows_to_append, columns=result.columns)],
+                ignore_index=True,
+            )
+
+        if validate and not result.empty:
+            final_keys = result[user_id_col].astype("string")
+            self._validate_scd2_periods(
+                pd.DataFrame(
+                    {
+                        "_user_id": final_keys,
+                        "_start": result[start_col],
+                        "_end": result[end_col],
+                    }
+                )
+            )
+
+        return result
     
 ##########################################################################################################################################
 ####################################################### PIPELINE  ########################################################################
