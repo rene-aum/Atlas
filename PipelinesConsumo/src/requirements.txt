@@ -1,0 +1,3 @@
+unidecode
+boto3
+s3fs
