@@ -816,12 +816,6 @@ class ProcessedCrmAtlas:
                          'opportunity_created_date','fecha_asignacion','id_am_comprador','opportunity_source','opportunity_source_aux']]
                         )
 
-        # usuarios
-        usuarios_proc = (usuarios_proc
-                        .rename(columns={'id': 'id_usuario', 'name': 'nombre_usuario'})
-                        [['id_usuario', 'nombre_usuario', 'equipo']]
-                        )
-
         # historico de citas
         hcitas_proc = (hcitas_proc
                         .rename(columns = {'created_by_id':'booker_id', 'created_by': 'booker_name'})
@@ -886,7 +880,7 @@ class ProcessedCrmAtlas:
                                     .loc[lambda x: x['new_value']=='scheduled']
                                     .sort_values(by=['numero_cita', 'created_date'],ascending=[True, True])
                                     .drop_duplicates(subset = ['numero_cita'], keep = 'first')
-                                    [['numero_cita', 'booker_id', 'booker_name']]), 
+                                    [['numero_cita', 'booker_id', 'booker_name']]),
                                 how = 'left',
                                 on = 'numero_cita'
                                 )
@@ -913,18 +907,20 @@ class ProcessedCrmAtlas:
 
         # agregamos equipo del owner y del booker a partir del catálogo de usuarios
         citas_cons = (citas_cons
-                        .merge(usuarios_proc, 
-                                how = 'left', 
-                                left_on='opportunity_owner_id', 
-                                right_on = 'id_usuario')
-                        .drop(columns = ['id_usuario', 'nombre_usuario'])
-                        .rename(columns = {'equipo':'opportunity_owner_equipo'})
-                        .merge(usuarios_proc, 
-                                how = 'left', 
-                                left_on = 'booker_id', 
-                                right_on = 'id_usuario')
-                        .drop(columns = ['id_usuario', 'nombre_usuario'])
-                        .rename(columns = {'equipo':'booker_equipo'})
+                        .pipe(
+                            self.add_team_from_scd2,
+                            usuarios_proc,
+                            date_col='opportunity_created_date',
+                            user_id_col='opportunity_owner_id',
+                            output_col='opportunity_owner_equipo',
+                        )
+                        .pipe(
+                            self.add_team_from_scd2,
+                            usuarios_proc,
+                            date_col='created_date',
+                            user_id_col='booker_id',
+                            output_col='booker_equipo',
+                        )
                      )
         
         # agregamos etiqueta de show y status previo usando específicamente el historico; por ahora no se usa pero es una alternativa
@@ -994,14 +990,13 @@ class ProcessedCrmAtlas:
                                 how = 'left',
                                 on='numero_cita'
                                 )
-                        .merge((usuarios_proc
-                                    .rename(columns = {'id_usuario':'cancelado_por_id', 'equipo':'cancelado_por_equipo'})
-                                    [['cancelado_por_id','cancelado_por_equipo']]
-                                    .drop_duplicates(subset='cancelado_por_id')
-                                ),
-                                how = 'left',
-                                on='cancelado_por_id'
-                                )
+                        .pipe(
+                            self.add_team_from_scd2,
+                            usuarios_proc,
+                            date_col='created_date',
+                            user_id_col='cancelado_por_id',
+                            output_col='cancelado_por_equipo',
+                        )
                           .assign(status_cancelacion = lambda x: x.status_cancelacion.mask(~x.status.str.contains(r'cancelado|no show', regex=True, na=False)),
                                   cancelado_por_id = lambda x: x.cancelado_por_id.mask(~x.status.str.contains(r'cancelado|no show', regex=True, na=False)),
                                   cancelado_por = lambda x: x.cancelado_por.mask(~x.status.str.contains(r'cancelado|no show', regex=True, na=False)),
