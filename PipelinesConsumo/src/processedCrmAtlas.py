@@ -1426,8 +1426,14 @@ class ProcessedCrmAtlas:
             perf_comentarios = lambda x: x.perf_comentarios.fillna('').str.lower(),
             perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago),
             perf_bc_score = lambda x: pd.to_numeric(x.perf_bc_score,errors='coerce').astype(float),
+            aux_excluir_asignado = lambda x:((x.perf_contactado.isna()) 
+                                            &(x.opportunity_stage=='cerrada (perdida)')
+                                            & (x.opportunity_source_aux.isin(['credito am contingencia','credito am api rechazado']))
+                                            & (x.opportunity_source=='credito am')
+                                            ),
             kpi_sales_center_flag_asignado=lambda x: (
                 x.case_owner_equipo_perf_sc.isin(equipos_sales_center)
+                & (~x.aux_excluir_asignado)
                 
             ).astype(int),
             kpi_sales_center_fecha_asignado=lambda x: (
@@ -1595,7 +1601,7 @@ class ProcessedCrmAtlas:
             x.kpi_flag_show_any.eq(1) | x.kpi_flag_negociacion.eq(1)
         ).astype(int),
             )
-        .drop(columns=['aux_aprobado_1','aux_aprobado_2',
+        .drop(columns=['aux_excluir_asignado','aux_aprobado_1','aux_aprobado_2',
             'kpi_sales_center_flag_puc_kuna_aprobado','kpi_sales_center_flag_puc_bbva_aprobado',
             'kpi_sales_center_flag_puc_kuna_rechazado','kpi_sales_center_flag_puc_eda',
             'kpi_sales_center_flag_puc_pasa_eam_700','kpi_sales_center_flag_puc_no_apto',
