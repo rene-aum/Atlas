@@ -1497,8 +1497,9 @@ class ProcessedCrmAtlas:
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
             kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
             kpi_sales_center_flag_bbva_sin_folio_650 = lambda x:((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('api'))
-                                                                & (x.perf_comentarios.str.contains('sin folio') | x.perf_comentarios.str.contains('define en eam')| x.perf_comentarios.str.contains('solicitado'))
-                                                                  & x.perf_bc_score.ge(650)).astype(int),           
+                                                                & (x.perf_comentarios.str.contains('sin folio') | x.perf_comentarios.str.contains('define en eam')| x.perf_comentarios.str.contains('solicitado')| x.perf_comentarios.str.contains('>650'))
+                                                                  & (x.perf_bc_score.ge(650)|x.perf_bc_score.isna())).astype(int),    
+            kpi_sales_center_flag_define_en_eam = lambda x: (x.per_comentarios.str.contains('se define en eam')&x.perf_comentarios.str.contains('bbva/kuna')).astype(int),       
             kpi_sales_center_flag_puc_no_apto = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1)
                                                            & x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0)
                                                            & x.kpi_sales_center_flag_puc_bbva_aprobado.eq(0)
@@ -1517,7 +1518,8 @@ class ProcessedCrmAtlas:
                                                                         x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
                                                                         x.kpi_sales_center_flag_puc_kuna_rechazado.eq(1),
                                                                         x.kpi_sales_center_flag_puc_no_apto.eq(1),
-                                                                        x.kpi_sales_center_flag_bbva_sin_folio_650.eq(1)
+                                                                        x.kpi_sales_center_flag_bbva_sin_folio_650.eq(1),
+                                                                        x.kpi_sales_center_flag_define_en_eam.eq(1),
                                                                     ],
                                                                     [
                                                                         "puc eda",
@@ -1527,6 +1529,7 @@ class ProcessedCrmAtlas:
                                                                         "puc kuna rechazado",
                                                                         "puc no apto",
                                                                         "puc bbva sin folio 650+",
+                                                                        "puc define en eam"
 
                                                                     ],
                                                                     default="puc otro",
@@ -1541,7 +1544,8 @@ class ProcessedCrmAtlas:
                                                                                                         "puc aprob bbva",
                                                                                                         "puc aprob kuna",
                                                                                                         "puc eam 700+",
-                                                                                                        "puc bbva sin folio 650+"]),
+                                                                                                        "puc bbva sin folio 650+",
+                                                                                                        "puc define en eam"]),
                                                                 x.kpi_sales_center_puc_resultado.isin(["puc otro",
                                                                                                         "puc kuna rechazado",
                                                                                                         "puc no apto"])
