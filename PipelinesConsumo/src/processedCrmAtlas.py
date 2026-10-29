@@ -1518,8 +1518,9 @@ class ProcessedCrmAtlas:
                                                                         x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
                                                                         x.kpi_sales_center_flag_puc_kuna_rechazado.eq(1),
                                                                         x.kpi_sales_center_flag_puc_no_apto.eq(1),
-                                                                        x.kpi_sales_center_flag_bbva_sin_folio_650.eq(1),
                                                                         x.kpi_sales_center_flag_define_en_eam.eq(1),
+                                                                        x.kpi_sales_center_flag_bbva_sin_folio_650.eq(1),
+                                                                        
                                                                     ],
                                                                     [
                                                                         "puc eda",
@@ -1528,8 +1529,9 @@ class ProcessedCrmAtlas:
                                                                         "puc eam 700+",
                                                                         "puc kuna rechazado",
                                                                         "puc no apto",
-                                                                        "puc bbva sin folio 650+",
-                                                                        "puc define en eam"
+                                                                        "puc define en eam",
+                                                                        "puc bbva sin folio 650+"
+                                                                        
 
                                                                     ],
                                                                     default="puc otro",
