@@ -582,6 +582,7 @@ CRM_KPIS_CITAS_COLUMNS = [
     'booker_equipo_operativo',
     'status_cancelacion',
     'cancelado_por_equipo_operativo',
+    'motivo_cancelacion',
     'flag_dummy',
     'flag_cita_agendada_comprador',
     'flag_cita_show_comprador',
