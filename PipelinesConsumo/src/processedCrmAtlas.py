@@ -2074,8 +2074,7 @@ class ProcessedCrmAtlas:
                 # Ignore incoming null teams when the current team is non-null.
                 if pd.notna(old_team) and pd.isna(new_team):
                     continue
-                if pd.isna(old_team) and pd.notna(new_team):
-                    continue
+                
 
                 team_changed = not self._same_scalar(old_team, new_team)
                 if not team_changed:
