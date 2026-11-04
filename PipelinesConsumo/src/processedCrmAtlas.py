@@ -425,7 +425,9 @@ class ProcessedCrmAtlas:
                 on='id',
                 suffixes=('', '_tec')
                 )
-            .assign(equipo=lambda x: self._normalize_series(x.equipo.fillna(x.equipo_tec)))
+            .assign(
+                equipo = lambda x: self._normalize_series(x.equipo).replace('', pd.NA).fillna(self._normalize_series(x.equipo_tec).replace('', pd.NA))
+            )
             .drop(columns='equipo_tec')
             )
 
