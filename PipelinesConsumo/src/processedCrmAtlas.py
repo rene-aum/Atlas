@@ -15,6 +15,7 @@ try:
         CRM_REPORTE_OPORTUNIDADES_COLUMNS,
         CRM_REPORTE_CITAS_COLUMNS,
         CRM_KPIS_CITAS_COLUMNS,
+        CRM_KPIS_VENTAS_COLUMNS,
         CRM_REPORTE_SIMULACIONES_COLUMNS,
         CRM_STATUS_CITA_COMPLETA,
         CRM_STATUS_PEDIDOS_ABIERTOS,
@@ -39,6 +40,7 @@ except ModuleNotFoundError:
         CRM_REPORTE_OPORTUNIDADES_COLUMNS,
         CRM_REPORTE_CITAS_COLUMNS,
         CRM_KPIS_CITAS_COLUMNS,
+        CRM_KPIS_VENTAS_COLUMNS,
         CRM_REPORTE_SIMULACIONES_COLUMNS,
         CRM_STATUS_CITA_COMPLETA,
         CRM_STATUS_PEDIDOS_ABIERTOS,
@@ -1376,6 +1378,17 @@ class ProcessedCrmAtlas:
                 "No se pueden calcular KPIs Sales Center con opportunity_id "
                 f"duplicados. Ejemplos: {sample_ids}"
             )
+
+    def add_kpis_ventas(self, reporte_ventas, kpis_salescenter):
+        kpis_ventas = (
+            reporte_ventas
+            .merge((kpis_salescenter
+                    [['opportunity_id', 'kpi_sales_center_puc_resultado', 'kpi_sales_center_puc_avanza', 'kpi_sales_center_cita_clasificacion']]
+                    ),
+                    how='left',
+                    on='opportunity_id'
+                    )
+        )
     
     def add_kpis_citas(self, reporte_citas, kpis_oppss, reporte_ventas):
         kpis_citas = (

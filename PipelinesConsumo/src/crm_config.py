@@ -589,3 +589,29 @@ CRM_KPIS_CITAS_COLUMNS = [
     'flag_venta_finanzas',
     'fecha_de_entrega'
     ]
+CRM_KPIS_VENTAS_COLUMNS = [
+    'sf_order_id',
+    'fecha_de_apartado',
+    'fecha_de_entrega',
+    'sku',
+    'espacio_am',
+    'tipo_de_venta',
+    'monto_total',
+    'monto_financiado''seguro',
+    'marca',
+    'modelo',
+    'anio',
+    'garantia',
+    'valor_vehiculo',
+    'monto_anticipo',
+    'monto_complemento',
+    'monto_enganche',
+    'porcentaje_comision',
+    'opportunity_id',
+    'opportunity_name',
+    'opportunity_created_date_day',
+    'opportunity_source',
+    'kpi_sales_center_puc_resultado',
+    'kpi_sales_center_puc_avanza',
+    'kpi_sales_center_cita_clasificacion'
+]
