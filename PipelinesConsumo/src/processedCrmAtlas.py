@@ -1389,6 +1389,10 @@ class ProcessedCrmAtlas:
                     on='opportunity_id'
                     )
         )
+        return self._select_existing_columns(
+            kpis_ventas,
+            self._dedupe_columns(CRM_KPIS_VENTAS_COLUMNS),
+        )
     
     def add_kpis_citas(self, reporte_citas, kpis_oppss, reporte_ventas):
         kpis_citas = (
