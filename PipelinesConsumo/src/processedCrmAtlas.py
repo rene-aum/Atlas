@@ -1180,8 +1180,11 @@ class ProcessedCrmAtlas:
         )
 
     def proc_reporte_simulaciones(self,solicitudes_credito):
+        res = (solicitudes_credito
+               .assign(flag_eda = lambda x: x.opportunity_id.fillna('').str.startswith('CREDITO EDA').astype(int))
+               )
         return self._select_existing_columns(
-            solicitudes_credito,
+            res,
             self._dedupe_columns(CRM_REPORTE_SIMULACIONES_COLUMNS)
         )
 
