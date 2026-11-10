@@ -30,6 +30,10 @@ CRM_LOG_FOLDER_ID = "1N3cUWCQ1B8CmaY8loaaGl81NOWjpboTD"
 CSV_ENCODING = 'utf-8'
 CRM_SHEET_NAME = "Sheet1"
 
+# IDs for TABLAS COMSUMO PROD & TABLAS CONSUMO DEV folders
+PROD_TABLAS_CONSUMO = "1PKqz6QeHCc9ythcU7LsSnu-6l_5rdGtV"
+DEV_TABLAS_CONSUMO = "16vIOvMh94fWOYb24mFIt1XADdCZK6N7b"
+
 # Existing Atlas Consumo tables that enrich CRM reports. They are not temporary
 # Salesforce exports, so they are read as external dependencies rather than
 # copied into the CRM raw-snapshot folder.
