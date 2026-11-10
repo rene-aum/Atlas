@@ -180,6 +180,34 @@ def list_file_ids_for_drive_folder(drive, folder_id:str):
         file_id_dict[file['title']] = file['id']
     return file_id_dict
 
+def list_sheets_ids_for_drive_folder(drive, folder_id: str) -> dict:
+    """Recursively list all Google Sheets in a Drive folder and its subfolders.
+
+    Returns {sheet_title: sheet_id} for every Sheets file found at any depth.
+    Duplicate titles are suffixed with their Drive ID to avoid collisions.
+    """
+    SHEETS_MIME  = 'application/vnd.google-apps.spreadsheet'
+    FOLDER_MIME  = 'application/vnd.google-apps.folder'
+
+    result = {}
+
+    def _walk(fid):
+        items = drive.ListFile(
+            {'q': f"'{fid}' in parents and trashed=false"}
+        ).GetList()
+        for item in items:
+            mime = item.get('mimeType', '')
+            if mime == SHEETS_MIME:
+                title = item['title']
+                if title in result:
+                    title = f"{title} ({item['id']})"
+                result[title] = item['id']
+            elif mime == FOLDER_MIME:
+                _walk(item['id'])
+
+    _walk(folder_id)
+    return result
+
 def read_csv_from_drive(drive,file_id):
     """
     """
