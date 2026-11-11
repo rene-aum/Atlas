@@ -1769,7 +1769,7 @@ class ProcessedCrmAtlas:
         # timezone after normalization preserves the local calendar date.
         if isinstance(parsed.dtype, pd.DatetimeTZDtype):
             parsed = parsed.dt.tz_localize(None)
-        return parsed.dt.normalize()
+        return parsed.dt.normalize().astype('datetime64[ns]')
 
 
     def _validate_scd2_periods(self, catalog: pd.DataFrame) -> None:
