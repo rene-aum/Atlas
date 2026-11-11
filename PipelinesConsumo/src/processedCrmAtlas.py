@@ -1180,8 +1180,11 @@ class ProcessedCrmAtlas:
         )
 
     def proc_reporte_simulaciones(self,solicitudes_credito):
+        res = (solicitudes_credito
+               .assign(flag_eda = lambda x: x.opportunity_id.fillna('').str.startswith('CREDITO EDA').astype(int))
+               )
         return self._select_existing_columns(
-            solicitudes_credito,
+            res,
             self._dedupe_columns(CRM_REPORTE_SIMULACIONES_COLUMNS)
         )
 
@@ -1530,8 +1533,9 @@ class ProcessedCrmAtlas:
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
             kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
             kpi_sales_center_flag_bbva_sin_folio_650 = lambda x:((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('api'))
-                                                                & (x.perf_comentarios.str.contains('sin folio') | x.perf_comentarios.str.contains('define en eam')| x.perf_comentarios.str.contains('solicitado')| x.perf_comentarios.str.contains('>650'))
-                                                                  & (x.perf_bc_score.ge(650))).astype(int),    
+                                                                & (x.perf_comentarios.str.contains('sin folio') & ~(x.perf_comentarios.str.contains('no paso por')))
+                                                                  & (x.perf_comentarios.str.contains('>650')|x.perf_comentarios.str.contains('> 650'))
+                                                                  & (x.opportunity_source_aux.ne('credito am api rechazado'))).astype(int),    
             kpi_sales_center_flag_define_en_eam = lambda x: (x.perf_comentarios.str.contains('se define en eam')&x.perf_comentarios.str.contains('bbva/kuna')).astype(int),       
             kpi_sales_center_flag_puc_no_apto = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1)
                                                            & x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0)

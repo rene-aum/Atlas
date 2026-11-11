@@ -357,6 +357,7 @@ CRM_CONSUMO_SHEET_NAMES = {
 
 CRM_REPORTE_SIMULACIONES_COLUMNS= ['opportunity_id',
     'opportunity_name',
+    'flag_eda',
     'tipo_credito',
     'proveedor_credito',
     'folio',
