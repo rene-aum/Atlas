@@ -458,6 +458,8 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "flag_cita_show_oportunidad",
     "stage_antes_de_cierre",
     "usuario_que_cerro",
+    "equipo_que_cerro",
+    "fecha_cierre",
     "motivo_cierre_oportunidad",
     "detalle_motivo_cierre_oportunidad",
     "primer_booker_comprador",
