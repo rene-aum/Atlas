@@ -1541,7 +1541,7 @@ class ProcessedCrmAtlas:
                                                                   & x.kpi_sales_center_flag_puc_bbva_aprobado.eq(0)
                                                                   & x.perf_comentarios.str.contains('chazado')
                                                                   & x.perf_comentarios.str.contains('kuna')).astype(int),
-            kpi_sales_center_flag_puc_pasa_eam_680 = lambda x:( x.perf_comentarios.str.contains('>680'))
+            kpi_sales_center_flag_puc_pasa_eam_680 = lambda x:( x.perf_comentarios.str.contains('>680')
                                                                 & x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),                                                        
             kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: ((pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)|x.perf_comentarios.str.contains('>700'))
                                                                 & x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
