@@ -269,6 +269,21 @@ CRM_REQUIRED_COLUMNS = {
     for table_name, rename_dict in CRM_RENAME_DICTS.items()
 }
 
+DICT_IDS_REPORTES_PIPELINE = {
+    'AcPublicaciones':'Silver/Atlas/ProcPublicaciones/',
+    'AcPedidos':'Silver/Atlas/ProcPedidos/',
+    'AcAdobeFunnelCompradorTotal':'Silver/Atlas/ProcComprador_Total/',
+    'AcAdobeFunnelCompradorUsuario':'Silver/Atlas/ProcComprador_Usuario/',
+    'AcAdobeFunnelVendedorTotal':'Silver/Atlas/ProcVendedor_Total/',
+    'AcAdobeFunnelVendedorUsuario':'Silver/Atlas/ProcVendedor_Usuario/',
+    'AcVisitasUnicas':'Silver/Atlas/ProcVisitasUnicas/',
+    'AcProductViews':'Silver/Atlas/ProcPDPViews/',
+    'AcSkuExtra':'Silver/Atlas/ProcVehiculosExtra/',
+    'AcClientes':'Silver/Atlas/ProcClientes/',
+    'AcPublicacionesCanceladas':'Gold/Commerce/vsCancellationLog/',
+    'AcWishlist':'Silver/Commerce/reporteWishlist/'
+}
+
 ###### REGLAS DE NEGOCIO PARA FILTRAR DATOS DE CRM ######
 
 CRM_WORK_TYPES_COMPRADOR = [
@@ -619,3 +634,4 @@ CRM_KPIS_VENTAS_COLUMNS = [
     'kpi_sales_center_puc_avanza',
     'kpi_sales_center_cita_clasificacion'
 ]
+
