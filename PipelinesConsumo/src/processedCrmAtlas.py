@@ -1766,6 +1766,332 @@ class ProcessedCrmAtlas:
             .reset_index(drop=True)
         )
 
+    def vista_actividad_pulso(self,
+         kpis_oportunidades,
+         kpis_citas
+            ):
+        """Aggregate Sales Center assignment and profiling activity by date."""
+        ops = (kpis_oportunidades
+                .assign(origen = lambda x: np.where(x.opportunity_source.eq('credito am'),x.opportunity_source_aux,x.opportunity_source)
+                )
+                )
+        ##### adquisicion ######
+        adq_date_col = 'opportunity_created_date_day'
+        adq_1 = (ops
+                [lambda x: x.opportunity_source!='credito am']
+                .groupby([adq_date_col,'opportunity_source'])
+                .opportunity_id.nunique()
+                .unstack('opportunity_source')
+                .reset_index()
+                .rename(columns={adq_date_col:'fecha_actividad'})
+                .fillna(0)
+                )
+        adq_2 = (ops
+                [lambda x: x.opportunity_source=='credito am']
+                .groupby([adq_date_col,'opportunity_source_aux'])
+                .opportunity_id.nunique()
+                .unstack('opportunity_source_aux')
+                .reset_index()
+                .rename(columns={adq_date_col:'fecha_actividad'})
+                .fillna(0)
+                )
+        adq_final = adq_1.merge(adq_2,on='fecha_actividad',how='outer').fillna(0)
+        adq_final.columns = ['adquisicion ' + c if c!='fecha_actividad' else c for c in adq_final.columns ]
+        ##### perfilamiento ######
+
+        kpi_sc = ops.copy()
+        sc_asignados = (
+            kpi_sc.groupby(
+                "kpi_sales_center_fecha_asignado", as_index=False
+            )
+            .kpi_sales_center_flag_asignado.sum()
+            .rename(
+                columns={
+                    "kpi_sales_center_fecha_asignado": "fecha_actividad"
+                }
+            )
+        )
+        metric_columns = [
+            "kpi_sales_center_flag_intento_contacto",
+            "kpi_sales_center_flag_contactado",
+            "kpi_sales_center_flag_interesado",
+            "kpi_sales_center_flag_perfilado",
+            "kpi_sales_center_flag_perfilado_credito",
+            "kpi_sales_center_flag_perfilado_contado",
+        ]
+        sc_contactados_perfilados = (
+            kpi_sc.groupby(
+                "kpi_sales_center_fecha_contactado", as_index=False
+            )[metric_columns]
+            .sum()
+            .rename(
+                columns={
+                    "kpi_sales_center_fecha_contactado": "fecha_actividad"
+                }
+            )
+        )
+        sc_intentos_x_origen = (
+            ops.groupby(
+                ["kpi_sales_center_fecha_contactado","origen"]
+            )['kpi_sales_center_flag_intento_contacto']
+            .sum()
+            .unstack()
+            .reset_index()
+            .rename(
+                columns={
+                    "kpi_sales_center_fecha_contactado": "fecha_actividad"
+                }
+            )
+        )
+        sc_intentos_x_origen.columns = ['intentos_contacto ' + c if c!='fecha_actividad' else c for c in sc_intentos_x_origen.columns ]
+
+        sc_exitosos_x_origen = (
+            ops.groupby(
+                ["kpi_sales_center_fecha_contactado","origen"]
+            )['kpi_sales_center_flag_contactado']
+            .sum()
+            .unstack()
+            .reset_index()
+            .rename(
+                columns={
+                    "kpi_sales_center_fecha_contactado": "fecha_actividad"
+                }
+            )
+        )
+        sc_exitosos_x_origen.columns = ['contactos_exitosos ' + c if c!='fecha_actividad' else c for c in sc_exitosos_x_origen.columns ]
+
+        ######## citas ############
+        citas_agendadas_date_col = 'created_date'
+        citas_programadas_date_col = 'sched_date'
+
+        citas_agendadas_sc = (kpis_citas
+                            [lambda x: x.flag_cita_agendada_comprador.eq(1)]
+                                [lambda x: x.booker_equipo_operativo.isin(['sales center','desconocido'])]
+                                .assign(perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago).fillna('desconocido'))
+                            .groupby([citas_agendadas_date_col,'perf_intencion_pago'])
+                            .flag_cita_agendada_comprador.sum()
+                            .unstack('perf_intencion_pago').fillna(0)
+                            .reset_index()
+                            .rename(columns={citas_agendadas_date_col:'fecha_actividad',
+                                                # 'flag_cita_agendada_comprador':'citas_agendadas_sc'
+                                                })
+                            )
+        citas_agendadas_sc.columns = ['citas_agendadas_sc ' + c if c!='fecha_actividad' else c for c in citas_agendadas_sc.columns ]
+
+        clasif_cita_cred = {'puc aprob bbva':'citas_agendadas_sc_bbva',
+                            'puc define en eam':'citas_agendadas_sc_define_en_eam',
+                            'puc eam 700+':'citas_agendadas_sc_bbva',
+                            'puc aprob kuna':'citas_agendadas_sc_kuna',
+                            'puc otro':'citas_agendadas_sc_bbva',
+                            'puc eda':'citas_agendadas_sc_bbva',
+                            'puc eam 680+':'citas_agendadas_sc_bbva',
+                            'puc bbva sin folio 650+':'citas_agendadas_sc_bbva',
+                            'puc no apto':'citas_agendadas_sc_bbva',
+                            'puc kuna rechazado':'citas_agendadas_sc_bbva'}
+
+        citas_agendadas_sc_credito = (kpis_citas
+                            [lambda x: x.flag_cita_agendada_comprador.eq(1)]
+                                [lambda x: x.booker_equipo_operativo.isin(['sales center','desconocido'])]
+                                .assign(perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago).fillna('desconocido'),
+                                        cita_cred_clasif = lambda x: x.kpi_sales_center_puc_resultado.map(clasif_cita_cred) )
+                            .groupby([citas_agendadas_date_col,'cita_cred_clasif'])
+                            .flag_cita_agendada_comprador.sum()
+                            .unstack('cita_cred_clasif').fillna(0)
+                            .reset_index()
+                            .rename(columns={citas_agendadas_date_col:'fecha_actividad',
+                                                # 'flag_cita_agendada_comprador':'citas_agendadas_sc'
+                                                })
+                            )
+
+
+        citas_agendadas_eam = (kpis_citas
+                                [lambda x: x.flag_cita_agendada_comprador.eq(1)]
+                                [lambda x: ~x.booker_equipo_operativo.isin(['sales center','desconocido'])]
+                                .assign(perf_intencion_pago = lambda x: self._normalize_series(x.perf_intencion_pago).fillna('desconocido'))
+                                .groupby([citas_agendadas_date_col,'perf_intencion_pago'])
+                            .flag_cita_agendada_comprador.sum()
+                            .unstack('perf_intencion_pago').fillna(0)
+                            .reset_index()
+                            .rename(columns={citas_agendadas_date_col:'fecha_actividad',
+                                                # 'flag_cita_agendada_comprador':'citas_agendadas_sc'
+                                                })
+                            )
+        citas_agendadas_eam.columns = ['citas_agendadas_eam ' + c if c!='fecha_actividad' else c for c in citas_agendadas_eam.columns ]
+        citas_agendadas_eam['total'] = citas_agendadas_eam.drop(columns='fecha_actividad').sum(axis=1)
+        # fix
+        citas_agendadas_eam['citas_ajuste_cred'] = (citas_agendadas_eam['citas_agendadas_eam desconocido'].multiply(0.75)).round(0)
+        citas_agendadas_eam['citas_agendadas_eam credito'] = citas_agendadas_eam['citas_agendadas_eam credito'] + citas_agendadas_eam['citas_ajuste_cred']
+        citas_agendadas_eam['citas_agendadas_eam contado'] = citas_agendadas_eam['total'] - citas_agendadas_eam['citas_agendadas_eam credito']
+        citas_agendadas_eam['citas_agendadas_eam'] = citas_agendadas_eam['total']
+        citas_agendadas_eam = citas_agendadas_eam.drop(columns=['total','citas_ajuste_cred','citas_agendadas_eam desconocido'])
+
+
+        ###### citas programadas ########
+        citas_programadas = (kpis_citas
+                            [lambda x: x.flag_cita_agendada_comprador.eq(1)]
+                            [lambda x: x.cancelado_por_equipo_operativo.ne('sales center')]
+                                .assign(perf_intencion_pago = lambda x:  self._normalize_series(x.perf_intencion_pago).fillna('desconocido'))
+                            .groupby([citas_programadas_date_col,'perf_intencion_pago'])
+                            .flag_cita_agendada_comprador.sum()
+                            .unstack('perf_intencion_pago').fillna(0)
+                            .reset_index()
+                            .rename(columns={citas_programadas_date_col:'fecha_actividad',
+                                                }
+                                    )
+                            )
+        citas_programadas.columns = ['citas_programadas ' + c if c!='fecha_actividad' else c for c in citas_programadas.columns ]
+        citas_programadas['total'] = citas_programadas.drop(columns='fecha_actividad').sum(axis=1)
+        # fix
+        citas_programadas['citas_prog_ajuste_cred'] = (citas_programadas['citas_programadas desconocido'].multiply(0.75)).round(0)
+        citas_programadas['citas_programadas credito'] = citas_programadas['citas_programadas credito'] + citas_programadas['citas_prog_ajuste_cred']
+        citas_programadas['citas_programadas contado'] = citas_programadas['total'] - citas_programadas['citas_programadas credito']
+        citas_programadas['citas_programadas'] = citas_programadas['total']
+        citas_programadas = citas_programadas.drop(columns=['total','citas_prog_ajuste_cred','citas_programadas desconocido'])
+
+        #### citas efectuadas #####
+        citas_efectivas= (kpis_citas
+                        [lambda x: x.flag_cita_agendada_comprador.eq(1)]
+                        [lambda x: x.flag_cita_show_comprador.eq(1)]
+                        .assign(perf_intencion_pago = lambda x:  self._normalize_series(x.perf_intencion_pago).fillna('desconocido'))
+                        .groupby([citas_programadas_date_col,'perf_intencion_pago'])
+                        .flag_cita_show_comprador.sum()
+                        .unstack('perf_intencion_pago').fillna(0)
+                        .reset_index()
+                        .rename(columns={citas_programadas_date_col:'fecha_actividad'}
+                        )
+                        )
+        citas_efectivas.columns = ['citas_efectivas ' + c if c!='fecha_actividad' else c for c in citas_efectivas.columns ]
+        citas_efectivas['total'] = citas_efectivas.drop(columns='fecha_actividad').sum(axis=1)
+        # fix
+        
+        citas_efectivas['citas_efect_ajuste_cred'] = (citas_efectivas['citas_efectivas desconocido'].multiply(0.75)).round(0)
+        citas_efectivas['citas_efectivas credito'] = citas_efectivas['citas_efectivas credito'] + citas_efectivas['citas_efect_ajuste_cred']
+        citas_efectivas['citas_efectivas contado'] = citas_efectivas['total'] - citas_efectivas['citas_efectivas credito']
+        citas_efectivas['citas_efectivas'] = citas_efectivas['total']
+        citas_efectivas= citas_efectivas.drop(columns=['total','citas_efect_ajuste_cred','citas_efectivas desconocido'])
+        
+        ###### clientes avanzan ######
+        clientes_avanzan = (kpis_citas
+                        [lambda x: x.flag_cita_agendada_comprador.eq(1)]
+                        [lambda x: x.cancelado_por_equipo_operativo.ne('sales center')]
+                        [lambda x: x.flag_cita_show_comprador.eq(1)]
+                        [lambda x: x.opportunity_stage.isin(['formalizacion','negociacion','cerrada (ganada)'])] 
+                            .groupby([citas_programadas_date_col],as_index=False)
+                        [['flag_cita_show_comprador']].sum()
+                        .rename(columns={citas_programadas_date_col:'fecha_actividad',
+                                        'flag_cita_show_comprador':'clientes_avanzan'})
+                        )
+
+
+        res = (
+            adq_final.merge(
+                sc_asignados,
+                on="fecha_actividad",
+                how="outer",
+            )
+            .merge(sc_contactados_perfilados,on='fecha_actividad',how='outer')
+            .merge(sc_intentos_x_origen,on='fecha_actividad',how='outer')
+            .merge(sc_exitosos_x_origen,on='fecha_actividad',how='outer')
+            .merge(citas_agendadas_sc,on='fecha_actividad',how='outer')
+            .merge(citas_agendadas_sc_credito,on='fecha_actividad',how='outer')
+            .merge(citas_agendadas_eam,on='fecha_actividad',how='outer')
+            .merge(citas_programadas,on='fecha_actividad',how='outer')
+            .merge(citas_efectivas,on='fecha_actividad',how='outer')
+            .merge(clientes_avanzan,on='fecha_actividad',how='outer')
+            .fillna(0)
+            .sort_values("fecha_actividad")
+            .reset_index(drop=True)
+            .assign(fecha_actividad = lambda x: pd.to_datetime(x.fecha_actividad),
+                _inicio_semana=lambda x: (
+                    x.fecha_actividad.dt.normalize()
+                    - pd.to_timedelta(
+                        (x.fecha_actividad.dt.dayofweek + 1) % 7,
+                        unit="D"
+                    )
+                ),
+                semana=lambda x: (
+                    "Semana " + x._inicio_semana.dt.strftime("%U")
+                    + " | " + x._inicio_semana.dt.strftime("%d/%m/%Y")
+                    + " - "
+                    + (x._inicio_semana + pd.Timedelta(days=6))
+                        .dt.strftime("%d/%m/%Y")
+                )
+            )
+            .drop(columns="_inicio_semana")
+
+        )
+        ######## limpiar esquema ##########
+        esquema = {
+            "Apartados": "adquisicion apartado am",
+            "APIs": "adquisicion credito am api aprobado",
+            "API Rechazado": "adquisicion credito am api rechazado",
+            "Contingencia": "adquisicion credito am contingencia",
+            "EDAs": "adquisicion credito eda",
+            "Contingencias Evaluadas": None,
+            "Enviados a Kuna / CDC (Rechazados)": None,
+            "Enviados a EAM (Pre Aprobados)": None,
+
+            "Leads Asignados": "kpi_sales_center_flag_asignado",
+
+            "Intentos de contacto": "kpi_sales_center_flag_intento_contacto",
+            "Intentos de contacto | Apartados": "intentos_contacto apartado am",
+            "Intentos de contacto | APIs": "intentos_contacto credito am api aprobado",
+            "Intentos de contacto | Kuna Crédito": "intentos_contacto credito am api rechazado",
+            "Intentos de contacto | EDAs": "intentos_contacto credito eda",
+            "Intentos de contacto | Contingencia": "intentos_contacto credito am contingencia",
+
+            "Contacto exitoso": "kpi_sales_center_flag_contactado",
+            "Contacto exitoso | Apartados": "contactos_exitosos apartado am",
+            "Contacto exitoso | APIs": "contactos_exitosos credito am api aprobado",
+            "Contacto exitoso | Kuna Crédito": "contactos_exitosos credito am api rechazado",
+            "Contacto exitoso | EDAs": "contactos_exitosos credito eda",
+            "Contacto exitoso | Contingencia": "contactos_exitosos credito am contingencia",
+
+            "Leads perfilados": "kpi_sales_center_flag_perfilado",
+            "Leads perfilados | Contado": "kpi_sales_center_flag_perfilado_contado",
+            "Leads perfilados | Crédito": "kpi_sales_center_flag_perfilado_credito",
+
+            "Citas agendadas": None,
+            "Citas agendadas | Contado": "citas_agendadas_sc contado",
+            "Citas agendadas | Crédito": "citas_agendadas_sc credito",
+            "Citas agendadas | Crédito BBVA": "citas_agendadas_sc_bbva",
+            "Citas agendadas | Kuna Crédito": "citas_agendadas_sc_kuna",
+            "Citas agendadas | Se define en EAM": "citas_agendadas_sc_define_en_eam",
+
+            "Cita agendada EAM": "citas_agendadas_eam",
+            "Lead directo a espacio": None,
+
+            "Reagendamiento": None,
+            "Reagendamiento | Contado": 'citas_agendadas_eam credito',
+            "Reagendamiento | Crédito": 'citas_agendadas_eam contado',
+
+            "Total citas planif. día": 'citas_programadas',
+            "Citas efectuadas (show)": 'citas_efectivas',
+            "Walk-ins": None,
+
+            "Clientes atendidos": None,
+            "Clientes atendidos | Contado": 'citas_efectivas contado',
+            "Clientes atendidos | Crédito": 'citas_efectivas credito',
+            "Solicitudes ingresadas": None,
+            "Solicitudes aprobadas": None,
+            "Clientes que avanzan": "clientes_avanzan",
+            "Ventas": None,
+        }
+        renombre = {
+            original: nuevo
+            for nuevo, original in esquema.items()
+            # if original is not None
+        }
+
+        # Orden de las métricas.
+        orden = list(esquema)
+        actividad_ordenado = (
+                    res.rename(columns=renombre)
+                        .reindex(columns=["fecha_actividad",'semana', *orden], fill_value=pd.NA)
+                        )
+
+        return res
+
 ##########################################################################################################################################
 ####################################################### CATALOGO SCD  ####################################################################
 
