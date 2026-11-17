@@ -393,6 +393,7 @@ DICT_IDS_CRM_DL = {
 
 CRM_REPORTE_SIMULACIONES_COLUMNS= ['opportunity_id',
     'opportunity_name',
+    'flag_eda',
     'tipo_credito',
     'proveedor_credito',
     'folio',
@@ -493,6 +494,8 @@ CRM_REPORTE_OPORTUNIDADES_COLUMNS = [
     "flag_cita_show_oportunidad",
     "stage_antes_de_cierre",
     "usuario_que_cerro",
+    "equipo_que_cerro",
+    "fecha_cierre",
     "motivo_cierre_oportunidad",
     "detalle_motivo_cierre_oportunidad",
     "primer_booker_comprador",

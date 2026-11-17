@@ -654,9 +654,20 @@ class ProcessedCrmAtlas:
                                 [lambda x: x.new_value=='cerrada (perdida)']
                                 .drop_duplicates('opportunity_id')
                                 .rename(columns={'old_value':'stage_antes_de_cierre',
-                                                'created_by':'usuario_que_cerro'})
-                                [['opportunity_id','stage_antes_de_cierre','usuario_que_cerro']]
+                                                'created_by':'usuario_que_cerro',
+                                                'created_by_id':'id_usuario_que_cerro',
+                                                'created_date':'fecha_cierre'})
+                                .pipe(
+                                    self.add_team_from_scd2,
+                                    catalogo_usuarios,
+                                    date_col='fecha_cierre',
+                                    user_id_col='id_usuario_que_cerro',
+                                    output_col='equipo_que_cerro',
                                 )
+                                [['opportunity_id','stage_antes_de_cierre',
+                                  'usuario_que_cerro','equipo_que_cerro',
+                                  'fecha_cierre']]
+                    )
 
         citas_comprador_aux = (
             citas_comprador
@@ -1180,8 +1191,11 @@ class ProcessedCrmAtlas:
         )
 
     def proc_reporte_simulaciones(self,solicitudes_credito):
+        res = (solicitudes_credito
+               .assign(flag_eda = lambda x: x.opportunity_name.fillna('').str.startswith('CREDITO EDA').astype(int))
+               )
         return self._select_existing_columns(
-            solicitudes_credito,
+            res,
             self._dedupe_columns(CRM_REPORTE_SIMULACIONES_COLUMNS)
         )
 
@@ -1527,11 +1541,15 @@ class ProcessedCrmAtlas:
                                                                   & x.kpi_sales_center_flag_puc_bbva_aprobado.eq(0)
                                                                   & x.perf_comentarios.str.contains('chazado')
                                                                   & x.perf_comentarios.str.contains('kuna')).astype(int),
-            kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: (pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)& x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
+            kpi_sales_center_flag_puc_pasa_eam_680 = lambda x:( x.perf_comentarios.str.contains('>680')
+                                                                & x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),                                                        
+            kpi_sales_center_flag_puc_pasa_eam_700 = lambda x: ((pd.to_numeric(x.perf_bc_score,errors='coerce').ge(700)|x.perf_comentarios.str.contains('>700'))
+                                                                & x.kpi_sales_center_flag_perfilado.eq(1)).astype(int),
             kpi_sales_center_flag_puc_eda = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1) & (x.opportunity_source=='credito eda')).astype(int),
             kpi_sales_center_flag_bbva_sin_folio_650 = lambda x:((x.perf_comentarios.str.contains('bbva') | x.perf_comentarios.str.contains('api'))
-                                                                & (x.perf_comentarios.str.contains('sin folio') | x.perf_comentarios.str.contains('define en eam')| x.perf_comentarios.str.contains('solicitado')| x.perf_comentarios.str.contains('>650'))
-                                                                  & (x.perf_bc_score.ge(650))).astype(int),    
+                                                                & (x.perf_comentarios.str.contains('sin folio') & ~(x.perf_comentarios.str.contains('no paso por')))
+                                                                  & (x.perf_comentarios.str.contains('>650')|x.perf_comentarios.str.contains('> 650'))
+                                                                  & (x.opportunity_source_aux.ne('credito am api rechazado'))).astype(int),    
             kpi_sales_center_flag_define_en_eam = lambda x: (x.perf_comentarios.str.contains('se define en eam')&x.perf_comentarios.str.contains('bbva/kuna')).astype(int),       
             kpi_sales_center_flag_puc_no_apto = lambda x: (x.kpi_sales_center_flag_perfilado.eq(1)
                                                            & x.kpi_sales_center_flag_puc_kuna_aprobado.eq(0)
@@ -1548,6 +1566,7 @@ class ProcessedCrmAtlas:
                                                                         x.kpi_sales_center_flag_puc_eda.eq(1),
                                                                         x.kpi_sales_center_flag_puc_bbva_aprobado.eq(1),
                                                                         x.kpi_sales_center_flag_puc_kuna_aprobado.eq(1),
+                                                                        x.kpi_sales_center_flag_puc_pasa_eam_680.eq(1),
                                                                         x.kpi_sales_center_flag_puc_pasa_eam_700.eq(1),
                                                                         x.kpi_sales_center_flag_puc_kuna_rechazado.eq(1),
                                                                         x.kpi_sales_center_flag_puc_no_apto.eq(1),
@@ -1559,6 +1578,7 @@ class ProcessedCrmAtlas:
                                                                         "puc eda",
                                                                         "puc aprob bbva",
                                                                         "puc aprob kuna",
+                                                                        "puc eam 680+",
                                                                         "puc eam 700+",
                                                                         "puc kuna rechazado",
                                                                         "puc no apto",
@@ -1578,6 +1598,7 @@ class ProcessedCrmAtlas:
                                                                 x.kpi_sales_center_puc_resultado.isin(["puc eda",
                                                                                                         "puc aprob bbva",
                                                                                                         "puc aprob kuna",
+                                                                                                        "puc eam 680+",
                                                                                                         "puc eam 700+",
                                                                                                         "puc bbva sin folio 650+",
                                                                                                         "puc define en eam"]),
