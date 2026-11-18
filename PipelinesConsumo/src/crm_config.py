@@ -30,6 +30,10 @@ CRM_LOG_FOLDER_ID = "1N3cUWCQ1B8CmaY8loaaGl81NOWjpboTD"
 CSV_ENCODING = 'utf-8'
 CRM_SHEET_NAME = "Sheet1"
 
+# IDs for TABLAS COMSUMO PROD & TABLAS CONSUMO DEV folders
+PROD_TABLAS_CONSUMO = "1PKqz6QeHCc9ythcU7LsSnu-6l_5rdGtV"
+DEV_TABLAS_CONSUMO = "16vIOvMh94fWOYb24mFIt1XADdCZK6N7b"
+
 # Existing Atlas Consumo tables that enrich CRM reports. They are not temporary
 # Salesforce exports, so they are read as external dependencies rather than
 # copied into the CRM raw-snapshot folder.
@@ -265,6 +269,21 @@ CRM_REQUIRED_COLUMNS = {
     for table_name, rename_dict in CRM_RENAME_DICTS.items()
 }
 
+DICT_IDS_REPORTES_PIPELINE = {
+    'AcPublicaciones':'Silver/Atlas/ProcPublicaciones/',
+    'AcPedidos':'Silver/Atlas/ProcPedidos/',
+    'AcAdobeFunnelCompradorTotal':'Silver/Atlas/ProcComprador_Total/',
+    'AcAdobeFunnelCompradorUsuario':'Silver/Atlas/ProcComprador_Usuario/',
+    'AcAdobeFunnelVendedorTotal':'Silver/Atlas/ProcVendedor_Total/',
+    'AcAdobeFunnelVendedorUsuario':'Silver/Atlas/ProcVendedor_Usuario/',
+    'AcVisitasUnicas':'Silver/Atlas/ProcVisitasUnicas/',
+    'AcProductViews':'Silver/Atlas/ProcPDPViews/',
+    'AcSkuExtra':'Silver/Atlas/ProcVehiculosExtra/',
+    'AcClientes':'Silver/Atlas/ProcClientes/',
+    'AcPublicacionesCanceladas':'Gold/Commerce/vsCancellationLog/',
+    'AcWishlist':'Silver/Commerce/reporteWishlist/'
+}
+
 ###### REGLAS DE NEGOCIO PARA FILTRAR DATOS DE CRM ######
 
 CRM_WORK_TYPES_COMPRADOR = [
@@ -342,17 +361,34 @@ CRM_CRITERIOS_CITA_CANCELADA = [
 CRM_CONSUMO_OUTPUT_IDS = {
     # Current draft outputs from ConstruccionReportesCrm.ipynb.
     # Replace these IDs when the final Atlas Consumo files are created.
-    "reporte_oportunidades": "108tBedxAlNDLdhmE-sctxkZK37woxLxWuY7blMbNzpM",
-    "reporte_simulaciones": "1bS-WZOVBBVR77jLbH5kZTIdlAMWGpcHyxA35zP-8skw",
+    "reporte_oportunidades":           "108tBedxAlNDLdhmE-sctxkZK37woxLxWuY7blMbNzpM",
+    "reporte_simulaciones":            "1bS-WZOVBBVR77jLbH5kZTIdlAMWGpcHyxA35zP-8skw",
     "reporte_historico_oportunidades": "1VXM04_8_t44oybLa0KHvScQidSo-m2wNWYMX48tvrHU",
-    "reporte_citas":"1IPCZpxirJUzVx7rzn54wjCXl6UlOvdySlva8un4Tloc"
+    "reporte_citas":                   "1IPCZpxirJUzVx7rzn54wjCXl6UlOvdySlva8un4Tloc",
+    "reporte_ventas":                  "1LQ2RM5mQPhxwhxwoaPUO7J62jomNBmrsdNk3jzO8t48",
 }
 
 CRM_CONSUMO_SHEET_NAMES = {
-    "reporte_oportunidades": "Hoja 1",
-    "reporte_simulaciones": "Hoja 1",
+    "reporte_oportunidades":           "Hoja 1",
+    "reporte_simulaciones":            "Hoja 1",
     "reporte_historico_oportunidades": "Hoja 1",
-    "reporte_citas":"Hoja 1"
+    "reporte_citas":                   "Hoja 1",
+    "reporte_ventas":                  "Hoja 1",
+}
+
+# Silver DL sources for each CRM raw table.
+# Values are relative to 'aws-s3-reporte-atenea-usorg-nprd/data/' — same
+# convention as DICT_IDS_REPORTES_PIPELINE so both loops share the same prefix.
+DICT_IDS_CRM_DL = {
+    "historico_oportunidades": "Silver/Atlas/ProcHistoricoOportunidades/",
+    "citas":                   "Silver/Atlas/ProcCitas/",
+    "oportunidades":           "Silver/Atlas/ProcOportunidades/",
+    "historico_citas":         "Silver/Atlas/ProcHistoricoCitas/",
+    "historico_casos":         "Silver/Atlas/ProcCasosCrmHistorico/",
+    "casos":                   "Silver/Atlas/ProcCasosCrm/",
+    "pedidos":                 "Silver/Atlas/ProcPedidos/",
+    "solicitudes_credito":     "Silver/Atlas/ProcSolicitudesCredito/",
+    "catalogo_usuarios_tec":   "Silver/Atlas/ProcCatalogoUsuarios/",
 }
 
 CRM_REPORTE_SIMULACIONES_COLUMNS= ['opportunity_id',
@@ -618,3 +654,4 @@ CRM_KPIS_VENTAS_COLUMNS = [
     'kpi_sales_center_puc_avanza',
     'kpi_sales_center_cita_clasificacion'
 ]
+
