@@ -29,6 +29,7 @@ try:
         CRM_CRITERIOS_HISTSHOW_CITAS,
         CRM_CRITERIOS_CITA_CANCELADA,
         CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR,
+        CRM_KPIS_OPS_COLUMNS,
         REPORTE_VENTAS_COLUMNS
     )
     from PipelinesConsumo.src.constants import mexico_tz
@@ -54,6 +55,7 @@ except ModuleNotFoundError:
         CRM_CRITERIOS_HISTSHOW_CITAS,
         CRM_CRITERIOS_CITA_CANCELADA,
         CRM_REPORTE_CITAS_OPPSSCOLUMNS_RELLENAR,
+        CRM_KPIS_OPS_COLUMNS,
         REPORTE_VENTAS_COLUMNS
     )
     from src.constants import mexico_tz
@@ -1668,7 +1670,10 @@ class ProcessedCrmAtlas:
             'kpi_sales_center_flag_no_acepta_kuna','kpi_sales_center_flag_bbva_sin_folio_650'
             ])
         )
-        return resultado
+        return self._select_existing_columns(
+            resultado,
+            self._dedupe_columns(CRM_KPIS_OPS_COLUMNS),
+                )
 
     def add_kpis_citas_por_oportunidad(self,reporte_oportunidades,reporte_citas):
         citas_mod = (reporte_citas
